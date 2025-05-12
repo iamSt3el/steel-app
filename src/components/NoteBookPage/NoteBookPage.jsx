@@ -1,5 +1,5 @@
 // src/components/NoteBookPage/NoteBookPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './NoteBookPage.module.scss';
 import Canvas from '../Canvas';
 import { Calendar, Clock, FileText } from 'lucide-react';
@@ -12,11 +12,42 @@ const NoteBookPage = ({
 }) => {
   const [canvasData, setCanvasData] = useState(null);
   const [pageTitle, setPageTitle] = useState('Untitled Page');
+  const [canvasSize, setCanvasSize] = useState({ width: 900, height: 600 });
+  const canvasWrapperRef = useRef(null);
 
   const handleCanvasChange = (dataURL) => {
     setCanvasData(dataURL);
     onPageChange?.(dataURL);
   };
+
+  // Calculate canvas size based on available space
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (canvasWrapperRef.current) {
+        const wrapper = canvasWrapperRef.current;
+        const rect = wrapper.getBoundingClientRect();
+        
+        // Calculate available space with some padding
+        const padding = 40;
+        const availableWidth = rect.width - padding;
+        const availableHeight = rect.height - padding;
+        
+        // Maintain aspect ratio while fitting in available space
+        const maxWidth = Math.max(900, availableWidth);
+        const maxHeight = Math.max(600, availableHeight);
+        
+        setCanvasSize({
+          width: Math.min(maxWidth, availableWidth),
+          height: Math.min(maxHeight, availableHeight)
+        });
+      }
+    };
+
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, []);
 
   const getCurrentTime = () => {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -56,10 +87,10 @@ const NoteBookPage = ({
         </div>
       </div>
       
-      <div className={styles.canvasWrapper}>
+      <div className={styles.canvasWrapper} ref={canvasWrapperRef}>
         <Canvas
-          width={900}
-          height={600}
+          width={canvasSize.width}
+          height={canvasSize.height}
           currentTool={currentTool}
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}

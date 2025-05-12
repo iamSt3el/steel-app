@@ -5,22 +5,22 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: $white;
-  border-radius: $radius-lg;
-  border: 1px solid $border-primary;
-  box-shadow: $shadow-sm;
+  width: 100%;
+  background-color: $bg-primary;
+  border-radius: $radius-xl;
   overflow: hidden;
+  border: 1px solid $border-secondary;
+  box-shadow: $shadow-md;
 }
 
 .pageHeader {
-  padding: $spacing-lg $spacing-xl;
-  background-color: $bg-secondary;
+  padding: $spacing-xl $spacing-2xl;
+  background: linear-gradient(90deg, $dark-bg-secondary, $dark-bg-tertiary);
   border-bottom: 1px solid $border-primary;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-radius: $radius-xl $radius-xl 0 0;
   
   .headerLeft {
     display: flex;
@@ -28,8 +28,8 @@
     gap: $spacing-md;
     
     .pageIcon {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       color: $primary-color;
     }
     
@@ -37,17 +37,18 @@
       background: transparent;
       border: none;
       color: $text-primary;
-      font-size: $font-size-lg;
-      font-weight: $font-weight-medium;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-semibold;
       outline: none;
-      border-bottom: 1px solid transparent;
+      min-width: 200px;
+      border-bottom: 2px solid transparent;
       padding: $spacing-sm;
-      border-radius: $radius-sm;
+      border-radius: $radius-md;
       transition: all $transition-base;
       
       &:focus {
         border-bottom-color: $primary-color;
-        background-color: rgba(79, 70, 229, 0.05);
+        background-color: rgba(255, 255, 255, 0.05);
       }
       
       &::placeholder {
@@ -58,7 +59,7 @@
   
   .headerRight {
     display: flex;
-    gap: $spacing-lg;
+    gap: $spacing-xl;
     
     .timeInfo {
       display: flex;
@@ -70,7 +71,11 @@
       .headerIcon {
         width: 16px;
         height: 16px;
-        color: $text-tertiary;
+        color: $accent-color;
+      }
+      
+      .date, .time {
+        font-weight: $font-weight-medium;
       }
     }
   }
@@ -81,5 +86,63 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: $bg-secondary;
+  padding: $spacing-2xl;
+  background: $bg-primary;
+  position: relative;
+  
+  // Add subtle background pattern
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.1) 0%, transparent 25%),
+      radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.1) 0%, transparent 25%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  canvas {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.pageFooter {
+  padding: $spacing-lg $spacing-2xl;
+  background-color: $dark-bg-secondary;
+  border-top: 1px solid $border-primary;
+  border-radius: 0 0 $radius-xl $radius-xl;
+  
+  .footerStats {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-xl;
+    
+    .stat {
+      color: $text-tertiary;
+      font-size: $font-size-xs;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      
+      .statValue {
+        color: $text-primary;
+        font-weight: $font-weight-medium;
+        text-transform: none;
+      }
+      
+      .colorPreview {
+        width: 16px;
+        height: 16px;
+        border-radius: $radius-sm;
+        border: 2px solid $border-primary;
+      }
+    }
+  }
 }
