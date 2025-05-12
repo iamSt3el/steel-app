@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import styles from './ToolBox.module.scss'
 import Button from '../Button/Button'
-import { Eraser, MousePointer2, Pen, Minus, Palette } from 'lucide-react'
+import { Eraser, MousePointer2, Pen, Palette, SlidersHorizontal } from 'lucide-react'
 import { useToolContext } from '../../context/ToolContext'
 
 const ToolBox = () => {
@@ -27,7 +27,7 @@ const ToolBox = () => {
         { id: 'pointer', Icon: MousePointer2, label: 'Select' },
         { id: 'pen', Icon: Pen, label: 'Pen' },
         { id: 'eraser', Icon: Eraser, label: 'Eraser' },
-        { id: 'stroke-size', Icon: Minus, label: 'Stroke Size' },
+        { id: 'stroke-size', Icon: SlidersHorizontal, label: 'Stroke Size' },
         { id: 'color-picker', Icon: Palette, label: 'Color Picker' }
     ];
 

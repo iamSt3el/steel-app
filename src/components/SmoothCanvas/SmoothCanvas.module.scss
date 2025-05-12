@@ -13,6 +13,11 @@
   transition: all $transition-base;
   overflow: hidden;
   
+  // Optimize for crisp rendering
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  
   &:hover {
     box-shadow: $shadow-md;
   }
@@ -23,7 +28,7 @@
   }
   
   &.eraserMode {
-    cursor: none; // Hide default cursor for custom eraser
+    cursor: none;
   }
   
   &.pointerMode {
@@ -37,6 +42,28 @@
   left: 0;
   z-index: 1;
   background: transparent;
+  
+  // Disable touch actions
+  touch-action: none;
+  
+  // Optimize for crisp rendering
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  
+  // Prevent any blurriness
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  
+  // Disable any browser smoothing
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: crisp-edges;
+  
+  // Ensure no antialiasing
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .svg {
@@ -45,6 +72,37 @@
   left: 0;
   z-index: 2;
   background: transparent;
+  
+  // Optimize SVG rendering for smooth lines
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  
+  // Prevent blur
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  
+  // Ensure the SVG doesn't capture pointer events
+  pointer-events: none;
+  
+  // Optimize path rendering
+  path {
+    vector-effect: non-scaling-stroke;
+    shape-rendering: geometricPrecision;
+    
+    // Important: Use nonzero fill rule to prevent white holes
+    fill-rule: nonzero;
+    
+    // Smooth transitions
+    transition: none; // Remove transitions that might cause jitter
+    
+    // Temporary paths
+    &#temp-path {
+      opacity: 0.9;
+      // Ensure temp paths also use nonzero fill rule
+      fill-rule: nonzero;
+      shape-rendering: auto;
+    }
+  }
 }
 
 .eraserCursor {
@@ -54,15 +112,16 @@
   pointer-events: none;
   z-index: 10;
   background: rgba($error, 0.1);
-  animation: pulse 1s infinite;
   
-  @keyframes pulse {
+  animation: eraserPulse 1s infinite;
+  
+  @keyframes eraserPulse {
     0% {
       transform: scale(1);
       opacity: 0.8;
     }
     50% {
-      transform: scale(1.1);
+      transform: scale(1.05);
       opacity: 0.6;
     }
     100% {
@@ -72,12 +131,37 @@
   }
 }
 
+// High DPI display optimizations
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .canvas,
+  .svg {
+    // Ensure crisp rendering on high DPI displays
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    
+    // Additional high DPI optimizations
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  .svg path {
+    // Optimize path rendering on high DPI
+    shape-rendering: geometricPrecision;
+    // Ensure nonzero fill rule on high DPI too
+    fill-rule: nonzero;
+  }
+}
+
 // Touch device optimizations
 @media (pointer: coarse) {
   .canvasContainer {
     .canvas,
     .svg {
       touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
   }
 }
