@@ -1,10 +1,11 @@
 import './App.scss';
-import Canvas from './components/Canvas';
+import Main from './layout/main';
 
 function App() {
   return (
     <div className="App">
-      <Canvas/>
+      {/*<Canvas/>*/}
+      <Main/>
     </div>
   );
 }

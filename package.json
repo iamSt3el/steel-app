@@ -44,6 +44,8 @@
     "concurrently": "^9.1.2",
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
+    "lucide-react": "^0.510.0",
+    "sass": "^1.88.0",
     "wait-on": "^8.0.3"
   },
   "main": "public/electron.js",

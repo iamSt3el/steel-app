@@ -5,9 +5,6 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: $bg-secondary;
+  background-color: $white;
   
-  @include dark-mode {
-    background-color: $dark-bg-primary;
-  }
 }
