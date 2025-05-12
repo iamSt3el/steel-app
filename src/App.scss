@@ -1,10 +1,13 @@
-// Import global styles
+// src/App.scss
 @import './styles/index';
 
 .App {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: $white;
+  background: linear-gradient(135deg, $dark-bg-primary, $dark-bg-secondary);
+  color: $text-primary;
   
+  // Apply custom scrollbar
+  @include custom-scrollbar;
 }

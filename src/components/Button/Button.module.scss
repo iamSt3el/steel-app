@@ -1,28 +1,39 @@
-.outterBox{
+// src/components/Button/Button.module.scss
+@import '../../styles/variables.scss';
 
-    .button{
-        height: 52px;
-        width: 52px;
-        background-color: white;
-        border: 1px solid black;
-        border-radius: 20%;
-        cursor: pointer;
-
-        box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
-
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transition: all 0.3s ease-in-out;
-        &:hover{
-            box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
-            transform: scale(1.1);
-        }
-        
-        .icon{
-            width: 34px;
-            height: 34px;
-        }
+.outterBox {
+  .button {
+    height: 52px;
+    width: 52px;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 20%;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease-in-out;
+    
+    &:hover {
+      box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+      transform: scale(1.1);
     }
-
+    
+    &.active {
+      background-color: $primary-color;
+      color: white;
+      border-color: $primary-color;
+      
+      .icon {
+        color: white;
+      }
+    }
+    
+    .icon {
+      width: 34px;
+      height: 34px;
+      transition: color 0.3s ease-in-out;
+    }
+  }
 }

@@ -1,0 +1,40 @@
+// src/components/Canvas/Canvas.module.scss
+@import '../../styles/variables.scss';
+
+.canvasContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: $spacing-lg;
+}
+
+.canvas {
+  border-radius: $radius-lg;
+  background-color: $white;
+  border: 1px solid $border-primary;
+  box-shadow: $shadow-sm;
+  transition: all $transition-base;
+  
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+  
+  // Different cursors for different tools
+  &.penMode {
+    cursor: crosshair;
+  }
+  
+  &.eraserMode {
+    cursor: grab;
+    
+    &:active {
+      cursor: grabbing;
+    }
+  }
+  
+  &.selectMode {
+    cursor: pointer;
+  }
+}

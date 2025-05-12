@@ -1,3 +1,4 @@
+// src/styles/globals.scss
 // Global Reset and Base Styles
 *,
 *::before,
@@ -23,11 +24,6 @@ body {
   background-color: $bg-secondary;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
-  @include dark-mode {
-    color: $dark-text-primary;
-    background-color: $dark-bg-primary;
-  }
 }
 
 // Remove default button styles
@@ -104,59 +100,4 @@ select {
 // Hide focus outline for mouse users
 :focus:not(:focus-visible) {
   outline: none;
-}
-
-// High contrast mode support
-@media (prefers-contrast: high) {
-  button,
-  input,
-  select,
-  textarea {
-    border-width: 2px;
-  }
-}
-
-// Reduced motion preferences
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-// Print styles
-@media print {
-  *,
-  *::before,
-  *::after {
-    background: transparent !important;
-    color: black !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-  
-  a,
-  a:visited {
-    text-decoration: underline;
-  }
-  
-  img {
-    page-break-inside: avoid;
-  }
-  
-  p,
-  h2,
-  h3 {
-    orphans: 3;
-    widows: 3;
-  }
-  
-  h2,
-  h3 {
-    page-break-after: avoid;
-  }
 }

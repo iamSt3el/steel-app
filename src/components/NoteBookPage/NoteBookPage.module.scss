@@ -1,0 +1,85 @@
+// src/components/NoteBookPage/NoteBookPage.module.scss
+@import '../../styles/variables.scss';
+
+.noteBookPage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: $white;
+  border-radius: $radius-lg;
+  border: 1px solid $border-primary;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+}
+
+.pageHeader {
+  padding: $spacing-lg $spacing-xl;
+  background-color: $bg-secondary;
+  border-bottom: 1px solid $border-primary;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  .headerLeft {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    
+    .pageIcon {
+      width: 20px;
+      height: 20px;
+      color: $primary-color;
+    }
+    
+    .pageTitle {
+      background: transparent;
+      border: none;
+      color: $text-primary;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-medium;
+      outline: none;
+      border-bottom: 1px solid transparent;
+      padding: $spacing-sm;
+      border-radius: $radius-sm;
+      transition: all $transition-base;
+      
+      &:focus {
+        border-bottom-color: $primary-color;
+        background-color: rgba(79, 70, 229, 0.05);
+      }
+      
+      &::placeholder {
+        color: $text-tertiary;
+      }
+    }
+  }
+  
+  .headerRight {
+    display: flex;
+    gap: $spacing-lg;
+    
+    .timeInfo {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      
+      .headerIcon {
+        width: 16px;
+        height: 16px;
+        color: $text-tertiary;
+      }
+    }
+  }
+}
+
+.canvasWrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: $bg-secondary;
+}

@@ -1,10 +1,41 @@
-.outterBox{
-    background-color: whitesmoke;;
-    padding: 10px;
-    border-radius: 20px;
-    box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
-    display: inline-flex;
-    gap: 20px;
-    
+// src/components/ToolBox/ToolBox.module.scss
+@import '../../styles/variables.scss';
 
+.outterBox {
+  background: linear-gradient(135deg, $dark-bg-tertiary, $dark-bg-secondary);
+  padding: $spacing-md;
+  border-radius: $radius-xl;
+  box-shadow: 
+    $shadow-lg,
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  gap: $spacing-md;
+  border: 1px solid $border-primary;
+  position: relative;
+  overflow: hidden;
+  
+  // Add a subtle glow effect
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      transparent,
+      rgba(99, 102, 241, 0.5),
+      transparent
+    );
+  }
+  
+  // Add hover effect for the entire toolbox
+  &:hover {
+    box-shadow: 
+      $shadow-xl,
+      $glow-primary,
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    transition: all $transition-bounce;
+  }
 }

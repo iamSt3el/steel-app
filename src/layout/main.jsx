@@ -1,3 +1,4 @@
+// src/layout/main.jsx
 import React from 'react'
 import styles from './main.module.scss'
 
@@ -5,8 +6,11 @@ import ToolBox from '../components/ToolBox/ToolBox'
 import Button from '../components/Button/Button'
 import { Menu } from 'lucide-react'
 import NoteBookPage from '../components/NoteBookPage/NoteBookPage'
+import { useToolContext } from '../context/ToolContext'
 
 const Main = () => {
+    const { currentTool, strokeColor, strokeWidth } = useToolContext();
+
     return (
         <div className={styles.main}>
             <div className={styles.outterBox}>
@@ -18,8 +22,11 @@ const Main = () => {
                 </div>
             </div>
             <div className={styles.canvasBox}>
-                <h1>Page</h1>
-                <NoteBookPage/>
+                <NoteBookPage
+                    currentTool={currentTool}
+                    strokeColor={strokeColor}
+                    strokeWidth={strokeWidth}
+                />
             </div>
         </div>
     )
