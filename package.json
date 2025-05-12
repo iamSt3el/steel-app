@@ -45,6 +45,7 @@
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
     "lucide-react": "^0.510.0",
+    "react-sketch-canvas": "^6.2.0",
     "roughjs": "^4.6.6",
     "sass": "^1.88.0",
     "wait-on": "^8.0.3"

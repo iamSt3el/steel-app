@@ -9,7 +9,7 @@ import NoteBookPage from '../components/NoteBookPage/NoteBookPage'
 import { useToolContext } from '../context/ToolContext'
 
 const Main = () => {
-    const { currentTool, strokeColor, strokeWidth } = useToolContext();
+    const { currentTool, strokeColor, strokeWidth, eraserWidth } = useToolContext();
 
     return (
         <div className={styles.main}>
@@ -26,6 +26,7 @@ const Main = () => {
                     currentTool={currentTool}
                     strokeColor={strokeColor}
                     strokeWidth={strokeWidth}
+                    eraserWidth={eraserWidth}
                 />
             </div>
         </div>

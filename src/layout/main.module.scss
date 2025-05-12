@@ -17,6 +17,7 @@
         justify-content: center;
         background-color: transparent;
         z-index: 10; // Ensure it stays on top
+        overflow: visible; // Allow toolbar items to overflow
         
         .menuBox {
             position: absolute;
@@ -25,6 +26,8 @@
 
         .toolbox {
             // already centered via parent
+            position: relative;
+            overflow: visible; // Allow slider to overflow
         }
     }
 

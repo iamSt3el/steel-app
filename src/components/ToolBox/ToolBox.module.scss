@@ -1,6 +1,14 @@
 // src/components/ToolBox/ToolBox.module.scss
 @import '../../styles/variables.scss';
 
+.toolBoxContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+}
+
 .outterBox {
   background: linear-gradient(135deg, $dark-bg-tertiary, $dark-bg-secondary);
   padding: $spacing-md;
@@ -12,7 +20,8 @@
   gap: $spacing-md;
   border: 1px solid $border-primary;
   position: relative;
-  overflow: hidden;
+  overflow: visible; // Change from hidden to visible
+  z-index: 1000; // Ensure it stays on top
   
   // Add a subtle glow effect
   &::before {
@@ -37,5 +46,131 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
     transition: all $transition-bounce;
+  }
+}
+
+.sliderContainer {
+  position: absolute;
+  top: calc(100% + $spacing-md);
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, $dark-bg-tertiary, $dark-bg-secondary);
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-xl;
+  border: 1px solid $border-primary;
+  min-width: 280px;
+  z-index: 1001; // Above the toolbox
+  backdrop-filter: blur(10px);
+  
+  // Add a subtle animation
+  animation: slideDown 0.2s ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, $dark-bg-tertiary, $dark-bg-secondary);
+    border: 1px solid $border-primary;
+    border-bottom: none;
+    border-right: none;
+    border-radius: 2px 0 0 0;
+    transform: translateX(-50%) rotate(45deg);
+    z-index: -1;
+  }
+  
+  .sliderGroup {
+    margin-bottom: $spacing-lg;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .sliderLabel {
+      display: block;
+      color: $text-primary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      margin-bottom: $spacing-sm;
+      text-align: center;
+    }
+    
+    .slider {
+      width: 100%;
+      height: 8px;
+      border-radius: $radius-sm;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      opacity: 0.8;
+      transition: opacity $transition-base;
+      -webkit-appearance: none;
+      appearance: none;
+      
+      &:hover {
+        opacity: 1;
+      }
+      
+      &::-webkit-slider-thumb {
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: $primary-color;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: all $transition-base;
+        
+        &:hover {
+          background: $primary-hover;
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+      }
+      
+      &::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: $primary-color;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        border: none;
+        transition: all $transition-base;
+        
+        &:hover {
+          background: $primary-hover;
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+      }
+      
+      &::-webkit-slider-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: $radius-sm;
+        height: 8px;
+      }
+      
+      &::-moz-range-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: $radius-sm;
+        height: 8px;
+        border: none;
+      }
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }

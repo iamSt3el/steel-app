@@ -14,7 +14,8 @@ export const useToolContext = () => {
 export const ToolProvider = ({ children }) => {
   const [currentTool, setCurrentTool] = useState('pen');
   const [strokeColor, setStrokeColor] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(2);
+  const [strokeWidth, setStrokeWidth] = useState(5);
+  const [eraserWidth, setEraserWidth] = useState(10);
 
   return (
     <ToolContext.Provider
@@ -25,6 +26,8 @@ export const ToolProvider = ({ children }) => {
         setStrokeColor,
         strokeWidth,
         setStrokeWidth,
+        eraserWidth,
+        setEraserWidth,
       }}
     >
       {children}

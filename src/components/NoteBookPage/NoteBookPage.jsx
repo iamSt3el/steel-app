@@ -8,12 +8,14 @@ const NoteBookPage = ({
   currentTool = 'pen',
   strokeColor = '#000000',
   strokeWidth = 2,
+  eraserWidth = 10,
   onPageChange 
 }) => {
   const [canvasData, setCanvasData] = useState(null);
   const [pageTitle, setPageTitle] = useState('Untitled Page');
   const [canvasSize, setCanvasSize] = useState({ width: 900, height: 600 });
   const canvasWrapperRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const handleCanvasChange = (dataURL) => {
     setCanvasData(dataURL);
@@ -89,11 +91,13 @@ const NoteBookPage = ({
       
       <div className={styles.canvasWrapper} ref={canvasWrapperRef}>
         <Canvas
+          ref={canvasRef}
           width={canvasSize.width}
           height={canvasSize.height}
           currentTool={currentTool}
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
+          eraserWidth={eraserWidth}
           onCanvasChange={handleCanvasChange}
         />
       </div>
