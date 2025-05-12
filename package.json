@@ -18,7 +18,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron-dev": "concurrently \"BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-dev": "concurrently \"BROWSER=none yarn start\" \"wait-on http://localhost:3000 && ELECTRON_OZONE_PLATFORM_HINT=x11 electron .\"",
     "electron-pack": "build -c.extraMetadata.main=build/electron.js -mlw",
     "preelectron-pack": "yarn build"
   },

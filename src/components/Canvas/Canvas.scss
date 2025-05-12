@@ -1,0 +1,244 @@
+// Import global styles
+@import '../../styles/variables';
+@import '../../styles/mixins';
+
+.canvas-container {
+  width: 100%;
+  height: 100vh;
+  @include flex-column;
+  background-color: $bg-secondary;
+  font-family: $font-family-base;
+}
+
+.toolbar {
+  background-color: $bg-primary;
+  box-shadow: $shadow-sm;
+  padding: $spacing-md $spacing-xl;
+  display: flex;
+  align-items: center;
+  gap: $spacing-2xl;
+  border-bottom: 1px solid $border-primary;
+  flex-wrap: wrap;
+  z-index: $z-sticky;
+  position: relative;
+
+  .toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    
+    &:not(:last-child) {
+      position: relative;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        right: -#{$spacing-md};
+        height: $spacing-2xl;
+        width: 1px;
+        background-color: $border-primary;
+      }
+    }
+  }
+
+  .tool-btn, .action-btn {
+    @include button-secondary;
+    padding: $spacing-md;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    
+    &.active {
+      @include button-primary;
+    }
+    
+    .icon {
+      font-size: $font-size-md;
+    }
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    font-size: $font-size-sm;
+    color: $text-primary;
+    font-weight: $font-weight-medium;
+  }
+
+  input[type="range"] {
+    width: 80px;
+    height: 4px;
+    border-radius: $radius-sm;
+    background: $gray-200;
+    outline: none;
+    cursor: pointer;
+    
+    &::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: $radius-full;
+      background: $primary-color;
+      cursor: pointer;
+      border: 2px solid $white;
+      box-shadow: $shadow-sm;
+    }
+    
+    &::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: $radius-full;
+      background: $primary-color;
+      cursor: pointer;
+      border: 2px solid $white;
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  input[type="color"] {
+    width: 32px;
+    height: 32px;
+    border: 2px solid $border-primary;
+    border-radius: $radius-md;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    
+    &::-webkit-color-swatch {
+      border: none;
+      border-radius: $radius-sm;
+    }
+    
+    &::-moz-color-swatch {
+      border: none;
+      border-radius: $radius-sm;
+    }
+  }
+
+  span {
+    font-size: $font-size-xs;
+    color: $text-tertiary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: $bg-secondary;
+  
+  canvas {
+    background-color: $bg-primary;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-sm;
+    position: absolute;
+    top: $spacing-xl;
+    left: $spacing-xl;
+    right: $spacing-xl;
+    bottom: $spacing-xl;
+    width: calc(100% - #{$spacing-xl * 2});
+    height: calc(100% - #{$spacing-xl * 2});
+  }
+}
+
+// Responsive design
+@include mobile {
+  .toolbar {
+    padding: $spacing-md;
+    gap: $spacing-md;
+    
+    .toolbar-section {
+      gap: $spacing-sm;
+      
+      &::after {
+        right: -#{$spacing-sm};
+      }
+    }
+    
+    .tool-btn, .action-btn {
+      padding: $spacing-sm;
+      font-size: $font-size-xs;
+      
+      .icon {
+        font-size: $font-size-sm;
+      }
+    }
+    
+    input[type="range"] {
+      width: 60px;
+    }
+    
+    input[type="color"] {
+      width: 28px;
+      height: 28px;
+    }
+  }
+  
+  .canvas-wrapper {
+    canvas {
+      top: $spacing-md;
+      left: $spacing-md;
+      right: $spacing-md;
+      bottom: $spacing-md;
+      width: calc(100% - #{$spacing-md * 2});
+      height: calc(100% - #{$spacing-md * 2});
+    }
+  }
+}
+
+// Dark mode support
+@include dark-mode {
+  .canvas-container {
+    background-color: $dark-bg-primary;
+  }
+  
+  .toolbar {
+    background-color: $dark-bg-secondary;
+    border-bottom-color: $dark-border-primary;
+    
+    .toolbar-section::after {
+      background-color: $dark-border-primary;
+    }
+    
+    .tool-btn, .action-btn {
+      background-color: $dark-bg-tertiary;
+      border-color: $dark-border-secondary;
+      color: $dark-text-primary;
+      
+      &:hover {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border-primary;
+      }
+      
+      &.active {
+        background-color: $primary-color;
+        color: $white;
+      }
+    }
+    
+    label {
+      color: $dark-text-primary;
+    }
+    
+    input[type="range"] {
+      background: $dark-border-secondary;
+    }
+    
+    input[type="color"] {
+      border-color: $dark-border-secondary;
+    }
+    
+    span {
+      color: $dark-text-tertiary;
+    }
+  }
+  
+  .canvas-wrapper {
+    background-color: $dark-bg-primary;
+    
+    canvas {
+      background-color: $dark-bg-secondary;
+    }
+  }
+}

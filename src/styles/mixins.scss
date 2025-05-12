@@ -1,0 +1,179 @@
+// Button Mixins
+@mixin button-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    font-weight: $font-weight-medium;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all $transition-base;
+    border-radius: $radius-md;
+    outline: none;
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+  
+  @mixin button-primary {
+    @include button-base;
+    background-color: $primary-color;
+    color: $white;
+    border-color: $primary-color;
+    
+    &:hover:not(:disabled) {
+      background-color: $primary-hover;
+      border-color: $primary-hover;
+    }
+  }
+  
+  @mixin button-secondary {
+    @include button-base;
+    background-color: $white;
+    color: $text-primary;
+    border-color: $border-primary;
+    
+    &:hover:not(:disabled) {
+      background-color: $gray-50;
+      border-color: $border-secondary;
+    }
+  }
+  
+  // Input Mixins
+  @mixin input-base {
+    width: 100%;
+    padding: $spacing-md;
+    border: 1px solid $border-primary;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    font-family: $font-family-base;
+    background-color: $white;
+    color: $text-primary;
+    transition: all $transition-base;
+    
+    &:focus {
+      outline: none;
+      border-color: $border-focus;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+    
+    &::placeholder {
+      color: $text-placeholder;
+    }
+    
+    &:disabled {
+      background-color: $gray-50;
+      color: $text-tertiary;
+      cursor: not-allowed;
+    }
+  }
+  
+  // Flex Mixins
+  @mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  @mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  @mixin flex-column {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  // Responsive Mixins
+  @mixin mobile {
+    @media (max-width: 768px) {
+      @content;
+    }
+  }
+  
+  @mixin tablet {
+    @media (min-width: 769px) and (max-width: 1024px) {
+      @content;
+    }
+  }
+  
+  @mixin desktop {
+    @media (min-width: 1025px) {
+      @content;
+    }
+  }
+  
+  // Dark Mode Mixin
+  @mixin dark-mode {
+    @media (prefers-color-scheme: dark) {
+      @content;
+    }
+  }
+  
+  // Truncate Text
+  @mixin truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  // Card Styling
+  @mixin card {
+    background-color: $white;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-sm;
+    border: 1px solid $border-primary;
+    
+    @include dark-mode {
+      background-color: $dark-bg-secondary;
+      border-color: $dark-border-primary;
+    }
+  }
+  
+  // Hover Elevation
+  @mixin hover-elevate {
+    transition: all $transition-base;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-lg;
+    }
+  }
+  
+  // Focus Ring
+  @mixin focus-ring($color: $primary-color) {
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba($color, 0.1);
+    }
+  }
+  
+  // Scrollbar Styling
+  @mixin custom-scrollbar {
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: $gray-100;
+      border-radius: $radius-md;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: $gray-300;
+      border-radius: $radius-md;
+      
+      &:hover {
+        background: $gray-400;
+      }
+    }
+  }

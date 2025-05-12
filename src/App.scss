@@ -1,0 +1,13 @@
+// Import global styles
+@import './styles/index';
+
+.App {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: $bg-secondary;
+  
+  @include dark-mode {
+    background-color: $dark-bg-primary;
+  }
+}
