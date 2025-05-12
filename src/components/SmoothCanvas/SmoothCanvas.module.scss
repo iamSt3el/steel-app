@@ -13,10 +13,15 @@
   transition: all $transition-base;
   overflow: hidden;
   
-  // Optimize for crisp rendering
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+  // Optimize for pen input
+  touch-action: pan-x pan-y;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  
+  // High performance rendering
+  will-change: contents;
+  contain: layout style paint;
   
   &:hover {
     box-shadow: $shadow-md;
@@ -43,27 +48,21 @@
   z-index: 1;
   background: transparent;
   
-  // Disable touch actions
-  touch-action: none;
+  // Optimized touch handling for pen input
+  touch-action: pan-x pan-y;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   
-  // Optimize for crisp rendering
+  // High performance optimizations
+  will-change: transform;
+  contain: strict;
+  
+  // Prevent any smoothing for crisp input
   image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
   image-rendering: pixelated;
-  
-  // Prevent any blurriness
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: unset;
-  
-  // Disable any browser smoothing
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-crisp-edges;
-  image-rendering: crisp-edges;
-  
-  // Ensure no antialiasing
-  -webkit-backface-visibility: hidden;
-  -moz-backface-visibility: hidden;
-  backface-visibility: hidden;
 }
 
 .svg {
@@ -77,9 +76,9 @@
   shape-rendering: geometricPrecision;
   text-rendering: geometricPrecision;
   
-  // Prevent blur
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  // High performance optimizations
+  will-change: contents;
+  contain: layout style paint;
   
   // Ensure the SVG doesn't capture pointer events
   pointer-events: none;
@@ -88,19 +87,14 @@
   path {
     vector-effect: non-scaling-stroke;
     shape-rendering: geometricPrecision;
-    
-    // Important: Use nonzero fill rule to prevent white holes
     fill-rule: nonzero;
     
-    // Smooth transitions
-    transition: none; // Remove transitions that might cause jitter
-    
-    // Temporary paths
+    // Temporary paths with optimized rendering
     &#temp-path {
       opacity: 0.9;
-      // Ensure temp paths also use nonzero fill rule
       fill-rule: nonzero;
-      shape-rendering: auto;
+      shape-rendering: optimizeSpeed; // Faster rendering for temp paths
+      will-change: d; // Optimize for frequent d attribute changes
     }
   }
 }
@@ -144,12 +138,16 @@
     transform: translateZ(0);
     will-change: transform;
   }
-  
-  .svg path {
-    // Optimize path rendering on high DPI
-    shape-rendering: geometricPrecision;
-    // Ensure nonzero fill rule on high DPI too
-    fill-rule: nonzero;
+}
+
+// Pen input specific optimizations
+@media (pointer: fine) {
+  .canvasContainer {
+    .canvas,
+    .svg {
+      // Optimize for high precision pointing devices
+      touch-action: pan-x pan-y;
+    }
   }
 }
 
@@ -158,10 +156,8 @@
   .canvasContainer {
     .canvas,
     .svg {
-      touch-action: none;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
+      touch-action: pan-x pan-y;
+      -webkit-overflow-scrolling: touch;
     }
   }
 }

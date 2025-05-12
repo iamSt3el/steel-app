@@ -21,23 +21,25 @@ const SmoothCanvas = forwardRef(({
   const [isErasing, setIsErasing] = useState(false);
   const lastPointRef = useRef(null);
   const [inputType, setInputType] = useState('mouse');
+  const activePointerRef = useRef(null);
+  const startTimeRef = useRef(null);
 
   // Get device pixel ratio for crisp rendering
   const dpr = window.devicePixelRatio || 1;
 
-  // Optimized stroke options for smoothness
+  // Enhanced stroke options with better pen responsiveness
   const strokeOptions = React.useMemo(() => {
     const baseOptions = {
       size: strokeWidth,
-      smoothing: 0.9,      // Increased for smoother lines
-      streamline: 0.7,     // Increased to reduce jitter
-      easing: (t) => t * t * (3 - 2 * t), // Smooth ease in-out
+      smoothing: 0.95,      // Increased for even smoother lines
+      streamline: 0.5,      // Reduced for better responsiveness
+      easing: (t) => Math.sin((t * Math.PI) / 2), // Smooth sine ease
       start: {
         taper: 0,
         cap: true
       },
       end: {
-        taper: 5,
+        taper: strokeWidth * 0.5,
         cap: true
       }
     };
@@ -45,8 +47,10 @@ const SmoothCanvas = forwardRef(({
     if (inputType === 'pen') {
       return {
         ...baseOptions,
-        thinning: 0.4,
+        thinning: 0.3,        // Reduced for better pen response
         simulatePressure: false,
+        streamline: 0.3,      // Lower streamline for immediate response
+        smoothing: 0.85,      // Slightly less smoothing for pen
       };
     } else {
       return {
@@ -71,17 +75,19 @@ const SmoothCanvas = forwardRef(({
     }
   }));
 
-  // Back to the working SVG path generation (with nonzero fill rule fix)
+  // Enhanced SVG path generation with better precision
   const getSvgPathFromStroke = useCallback((stroke) => {
     if (!stroke.length) return '';
 
     const d = stroke.reduce(
       (acc, [x0, y0], i, arr) => {
         if (i === 0) {
-          acc.push('M', x0, y0);
+          acc.push('M', x0.toFixed(2), y0.toFixed(2));
         } else {
           const [x1, y1] = arr[(i + 1) % arr.length];
-          acc.push('Q', x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+          const cpx = ((x0 + x1) / 2).toFixed(2);
+          const cpy = ((y0 + y1) / 2).toFixed(2);
+          acc.push('Q', x0.toFixed(2), y0.toFixed(2), cpx, cpy);
         }
         return acc;
       },
@@ -92,11 +98,11 @@ const SmoothCanvas = forwardRef(({
     return d.join(' ');
   }, []);
 
-  // Improved point extraction with smoothing
+  // Enhanced point extraction with high precision
   const getPointFromEvent = useCallback((e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     
-    // Detect input type
+    // Set input type with priority for pen
     if (e.pointerType === 'pen') {
       setInputType('pen');
     } else if (e.pointerType === 'touch') {
@@ -105,74 +111,93 @@ const SmoothCanvas = forwardRef(({
       setInputType('mouse');
     }
     
-    // Get coordinates with sub-pixel precision
-    const x = (e.clientX - rect.left) * dpr / dpr;
-    const y = (e.clientY - rect.top) * dpr / dpr;
+    // Get high-precision coordinates
+    const x = (e.clientX - rect.left) / rect.width * width;
+    const y = (e.clientY - rect.top) / rect.height * height;
     
-    // Handle pressure
+    // Enhanced pressure handling
     let pressure = 0.5;
-    if (e.pointerType === 'pen' && typeof e.pressure === 'number') {
-      pressure = Math.max(0.1, Math.min(1, e.pressure));
+    if (e.pointerType === 'pen') {
+      // Use raw pressure for pen input
+      pressure = e.pressure || 0.5;
+      // Normalize pressure range for better control
+      pressure = Math.max(0.1, Math.min(1, pressure));
     } else if (e.pointerType === 'touch') {
+      // Constant pressure for touch
       pressure = 0.7;
     }
     
-    return [x, y, pressure, Date.now()];
-  }, [dpr]);
+    return [x, y, pressure, e.timeStamp || Date.now()];
+  }, [width, height]);
 
-  // Enhanced speed-to-pressure calculation
+  // Enhanced speed-to-pressure calculation for mouse
   const calculateSpeedPressure = useCallback((currentPoint, lastPoint) => {
     if (!lastPoint || inputType !== 'mouse') return currentPoint[2];
     
     const [x1, y1, , t1] = currentPoint;
-    const [x2, y2, , t2] = lastPoint;
+    const [x2, y2, lastPressure, t2] = lastPoint;
     
     const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
     const timeDistance = Math.max(1, t1 - t2);
     const speed = distance / timeDistance;
     
-    // Adjust for more natural pressure variation
-    const maxSpeed = 2;
-    const speedPressure = Math.max(0.2, Math.min(0.9, 1 - speed / maxSpeed));
+    // Better speed-to-pressure mapping
+    const maxSpeed = 1.5; // Adjusted for better sensitivity
+    const speedPressure = Math.max(0.1, Math.min(1, 1 - speed / maxSpeed));
     
-    // Heavy smoothing for mouse input
-    const smoothingFactor = 0.1;
-    const smoothedPressure = lastPoint[2] * (1 - smoothingFactor) + speedPressure * smoothingFactor;
-    
-    return smoothedPressure;
+    // Smoother pressure transitions for mouse
+    const smoothingFactor = 0.3;
+    return lastPressure * (1 - smoothingFactor) + speedPressure * smoothingFactor;
   }, [inputType]);
 
-  // Handle pointer down
+  // Handle pointer down with better event handling
   const handlePointerDown = useCallback((e) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !e.isPrimary) return;
     
+    // Store active pointer ID for multi-touch support
+    activePointerRef.current = e.pointerId;
     setIsDrawing(true);
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Capture the pointer for better tracking
+    if (canvasRef.current.setPointerCapture) {
+      canvasRef.current.setPointerCapture(e.pointerId);
+    }
     
     const point = getPointFromEvent(e);
     lastPointRef.current = point;
+    startTimeRef.current = point[3];
     
     if (isErasing) {
       handleErase(point[0], point[1]);
     } else {
       setCurrentPath([point]);
       
-      // Create a more precise initial stroke for very small movements
+      // Create immediate visual feedback
       const svg = svgRef.current;
       const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       tempPath.id = 'temp-path';
       tempPath.style.fill = strokeColor;
       tempPath.style.opacity = '0.9';
-      tempPath.style.fillRule = 'nonzero'; // Set nonzero fill rule
+      tempPath.style.fillRule = 'nonzero';
+      
+      // Add initial point as a small circle for immediate feedback
+      const initialStroke = getStroke([point, point], strokeOptions);
+      const pathData = getSvgPathFromStroke(initialStroke);
+      tempPath.setAttribute('d', pathData);
+      
       svg.appendChild(tempPath);
     }
-  }, [isErasing, getPointFromEvent, strokeColor]);
+  }, [isErasing, getPointFromEvent, strokeColor, strokeOptions, getSvgPathFromStroke]);
 
-  // Optimized pointer move handler
+  // Enhanced pointer move handler with better performance
   const handlePointerMove = useCallback((e) => {
-    if (!isDrawing || !canvasRef.current) return;
+    if (!isDrawing || !canvasRef.current || e.pointerId !== activePointerRef.current) return;
     
     e.preventDefault();
+    e.stopPropagation();
+    
     const point = getPointFromEvent(e);
     
     if (isErasing) {
@@ -186,23 +211,17 @@ const SmoothCanvas = forwardRef(({
       setCurrentPath(prev => {
         const newPath = [...prev, point];
         
-        // Update temp path with better performance
-        if (newPath.length > 1) {
-          const svg = svgRef.current;
-          const tempPath = svg.querySelector('#temp-path');
-          
-          if (tempPath) {
-            // Only update every 2nd point for better performance while maintaining smoothness
-            if (newPath.length % 2 === 0) {
-              try {
-                const stroke = getStroke(newPath, strokeOptions);
-                const pathData = getSvgPathFromStroke(stroke);
-                tempPath.setAttribute('d', pathData);
-                tempPath.style.fillRule = 'nonzero'; // Ensure nonzero fill rule
-              } catch (error) {
-                console.warn('Error updating path:', error);
-              }
-            }
+        // Update temp path every frame for maximum responsiveness
+        const svg = svgRef.current;
+        const tempPath = svg.querySelector('#temp-path');
+        
+        if (tempPath && newPath.length > 1) {
+          try {
+            const stroke = getStroke(newPath, strokeOptions);
+            const pathData = getSvgPathFromStroke(stroke);
+            tempPath.setAttribute('d', pathData);
+          } catch (error) {
+            console.warn('Error updating path:', error);
           }
         }
         
@@ -213,11 +232,17 @@ const SmoothCanvas = forwardRef(({
     lastPointRef.current = point;
   }, [isDrawing, isErasing, getPointFromEvent, strokeOptions, getSvgPathFromStroke, inputType, calculateSpeedPressure]);
 
-  // Handle pointer up
-  const handlePointerUp = useCallback(() => {
-    if (!isDrawing) return;
+  // Handle pointer up with cleanup
+  const handlePointerUp = useCallback((e) => {
+    if (!isDrawing || e.pointerId !== activePointerRef.current) return;
     
     setIsDrawing(false);
+    activePointerRef.current = null;
+    
+    // Release pointer capture
+    if (canvasRef.current.releasePointerCapture) {
+      canvasRef.current.releasePointerCapture(e.pointerId);
+    }
     
     if (!isErasing && currentPath.length > 0) {
       // Create final stroke with full precision
@@ -259,7 +284,7 @@ const SmoothCanvas = forwardRef(({
     lastPointRef.current = null;
   }, [isDrawing, isErasing, currentPath, strokeColor, strokeOptions, getSvgPathFromStroke, inputType, strokeWidth, onCanvasChange]);
 
-  // Handle erasing
+  // Enhanced erasing with better collision detection
   const handleErase = useCallback((x, y) => {
     setPaths(prev => {
       return prev.filter(pathObj => {
@@ -270,17 +295,21 @@ const SmoothCanvas = forwardRef(({
           const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           path.setAttribute('d', pathObj.pathData);
           
-          const bbox = path.getBBox();
+          // Check multiple points around the eraser position
+          const checkPoints = [
+            [x, y],
+            [x - eraserWidth, y],
+            [x + eraserWidth, y],
+            [x, y - eraserWidth],
+            [x, y + eraserWidth]
+          ];
           
-          // Quick bounding box check
-          if (x < bbox.x - eraserWidth || 
-              x > bbox.x + bbox.width + eraserWidth ||
-              y < bbox.y - eraserWidth || 
-              y > bbox.y + bbox.height + eraserWidth) {
-            return true;
-          }
-          
-          return false;
+          return !checkPoints.some(([px, py]) => {
+            const point = svg.createSVGPoint();
+            point.x = px;
+            point.y = py;
+            return path.isPointInFill(point);
+          });
         }
         return true;
       });
@@ -394,7 +423,7 @@ const SmoothCanvas = forwardRef(({
         height={height * dpr}
         className={styles.canvas}
         style={{ 
-          touchAction: 'none',
+          touchAction: 'pan-x pan-y',  // Changed for better pen support
           width: `${width}px`,
           height: `${height}px`
         }}
@@ -432,7 +461,7 @@ const SmoothCanvas = forwardRef(({
             d={pathObj.pathData}
             fill={pathObj.color}
             stroke="none"
-            fillRule="nonzero"  // Use nonzero fill rule to prevent white holes
+            fillRule="nonzero"
           />
         ))}
       </svg>
