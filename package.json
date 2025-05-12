@@ -7,6 +7,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^13.2.1",
+    "electron-is-dev": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
@@ -16,7 +17,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron-dev": "concurrently \"BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-pack": "build -c.extraMetadata.main=build/electron.js -mlw",
+    "preelectron-pack": "yarn build"
   },
   "eslintConfig": {
     "extends": [
@@ -35,5 +39,24 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^36.2.0",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.3"
+  },
+  "main": "public/electron.js",
+  "author": "Captain Electron",
+  "homepage": "./",
+  "build": {
+    "appId": "com.example.react-electron-app",
+    "files": [
+      "build/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
   }
 }
