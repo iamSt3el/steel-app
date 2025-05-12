@@ -51,6 +51,11 @@
       @include button-primary;
     }
     
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
     .icon {
       font-size: $font-size-md;
     }
@@ -104,6 +109,11 @@
     cursor: pointer;
     outline: none;
     
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
     &::-webkit-color-swatch {
       border: none;
       border-radius: $radius-sm;
@@ -115,6 +125,16 @@
     }
   }
 
+  .page-indicator {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-weight-medium;
+    background-color: $bg-tertiary;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    border: 1px solid $border-primary;
+  }
+
   span {
     font-size: $font-size-xs;
     color: $text-tertiary;
@@ -122,23 +142,81 @@
   }
 }
 
-.canvas-wrapper {
+.canvas-viewport {
   flex: 1;
+  @include flex-center;
+  background-color: $gray-100;
+  padding: $spacing-xl;
+  overflow: auto;
+  
+  // Add notebook binder holes pattern
+  background-image: 
+    radial-gradient(circle at 25px 50px, $gray-300 8px, transparent 8px),
+    radial-gradient(circle at 25px 150px, $gray-300 8px, transparent 8px),
+    radial-gradient(circle at 25px 250px, $gray-300 8px, transparent 8px),
+    radial-gradient(circle at 25px 350px, $gray-300 8px, transparent 8px),
+    radial-gradient(circle at 25px 450px, $gray-300 8px, transparent 8px);
+  background-size: 50px 100px;
+  background-repeat: repeat-y;
+  background-position: left center;
+}
+
+.canvas-wrapper {
   position: relative;
-  overflow: hidden;
-  background-color: $bg-secondary;
   
   canvas {
-    background-color: $bg-primary;
+    background-color: $white;
+    box-shadow: 
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 8px 24px rgba(0, 0, 0, 0.1);
     border-radius: $radius-lg;
-    box-shadow: $shadow-sm;
+    display: block;
+    
+    // A4 page appearance
+    max-width: 90vw;
+    max-height: 80vh;
+    
+    // Subtle paper texture
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,0.3) 21%, rgba(255,255,255,0.3) 34%, transparent 35%, transparent),
+        linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: -1;
+    }
+  }
+  
+  .slide-indicator {
     position: absolute;
-    top: $spacing-xl;
-    left: $spacing-xl;
-    right: $spacing-xl;
-    bottom: $spacing-xl;
-    width: calc(100% - #{$spacing-xl * 2});
-    height: calc(100% - #{$spacing-xl * 2});
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: $spacing-md $spacing-lg;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    z-index: $z-modal;
+    animation: slideIndicator 0.3s ease;
+  }
+}
+
+@keyframes slideIndicator {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -147,9 +225,12 @@
   .toolbar {
     padding: $spacing-md;
     gap: $spacing-md;
+    justify-content: center;
     
     .toolbar-section {
       gap: $spacing-sm;
+      flex-wrap: wrap;
+      justify-content: center;
       
       &::after {
         right: -#{$spacing-sm};
@@ -173,16 +254,19 @@
       width: 28px;
       height: 28px;
     }
+    
+    .page-indicator {
+      font-size: $font-size-xs;
+      padding: $spacing-xs $spacing-sm;
+    }
   }
   
-  .canvas-wrapper {
+  .canvas-viewport {
+    padding: $spacing-md;
+    
     canvas {
-      top: $spacing-md;
-      left: $spacing-md;
-      right: $spacing-md;
-      bottom: $spacing-md;
-      width: calc(100% - #{$spacing-md * 2});
-      height: calc(100% - #{$spacing-md * 2});
+      max-width: 95vw;
+      max-height: 70vh;
     }
   }
 }
@@ -206,7 +290,7 @@
       border-color: $dark-border-secondary;
       color: $dark-text-primary;
       
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: $dark-bg-secondary;
         border-color: $dark-border-primary;
       }
@@ -229,12 +313,18 @@
       border-color: $dark-border-secondary;
     }
     
+    .page-indicator {
+      color: $dark-text-secondary;
+      background-color: $dark-bg-tertiary;
+      border-color: $dark-border-secondary;
+    }
+    
     span {
       color: $dark-text-tertiary;
     }
   }
   
-  .canvas-wrapper {
+  .canvas-viewport {
     background-color: $dark-bg-primary;
     
     canvas {
