@@ -1,4 +1,4 @@
-// src/context/ToolContext.jsx
+// src/context/ToolContext.js
 import React, { createContext, useContext, useState } from 'react';
 
 const ToolContext = createContext();
@@ -17,13 +17,18 @@ export const ToolProvider = ({ children }) => {
   const [strokeWidth, setStrokeWidth] = useState(5);
   const [eraserWidth, setEraserWidth] = useState(10);
 
+  // Update strokeColor properly
+  const handleStrokeColorChange = (color) => {
+    setStrokeColor(color);
+  };
+
   return (
     <ToolContext.Provider
       value={{
         currentTool,
         setCurrentTool,
         strokeColor,
-        setStrokeColor,
+        setStrokeColor: handleStrokeColorChange,
         strokeWidth,
         setStrokeWidth,
         eraserWidth,

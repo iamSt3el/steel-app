@@ -45,6 +45,7 @@
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
     "lucide-react": "^0.510.0",
+    "perfect-freehand": "^1.2.2",
     "react-sketch-canvas": "^6.2.0",
     "roughjs": "^4.6.6",
     "sass": "^1.88.0",

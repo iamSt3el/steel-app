@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './NoteBookPage.module.scss';
 import Canvas from '../Canvas';
-import { Calendar, Clock, FileText } from 'lucide-react';
+import { Calendar, Clock, FileText, Undo, RotateCcw } from 'lucide-react';
 
 const NoteBookPage = ({ 
   currentTool = 'pen',
@@ -63,6 +63,19 @@ const NoteBookPage = ({
     });
   };
 
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        canvasRef.current?.undo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className={styles.noteBookPage}>
       <div className={styles.pageHeader}>
@@ -75,6 +88,25 @@ const NoteBookPage = ({
             className={styles.pageTitle}
             placeholder="Untitled Page"
           />
+        </div>
+        
+        <div className={styles.headerCenter}>
+          <button 
+            className={styles.actionButton}
+            onClick={() => canvasRef.current?.undo()}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo className={styles.buttonIcon} />
+            Undo
+          </button>
+          <button 
+            className={styles.actionButton}
+            onClick={() => canvasRef.current?.clearCanvas()}
+            title="Clear Canvas"
+          >
+            <RotateCcw className={styles.buttonIcon} />
+            Clear
+          </button>
         </div>
         
         <div className={styles.headerRight}>
@@ -100,6 +132,26 @@ const NoteBookPage = ({
           eraserWidth={eraserWidth}
           onCanvasChange={handleCanvasChange}
         />
+      </div>
+      
+      <div className={styles.pageFooter}>
+        <div className={styles.footerStats}>
+          <div className={styles.stat}>
+            Current Tool:
+            <span className={styles.statValue}>{currentTool}</span>
+          </div>
+          <div className={styles.stat}>
+            Stroke Width:
+            <span className={styles.statValue}>{strokeWidth}px</span>
+          </div>
+          <div className={styles.stat}>
+            Color:
+            <div 
+              className={styles.colorPreview}
+              style={{ backgroundColor: strokeColor }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

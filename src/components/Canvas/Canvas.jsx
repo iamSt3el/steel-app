@@ -1,39 +1,43 @@
 // src/components/Canvas/Canvas.jsx
-import React, { useRef, useEffect, useState } from 'react';
-import { ReactSketchCanvas } from 'react-sketch-canvas';
+import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import SmoothCanvas from '../SmoothCanvas';
 import styles from './Canvas.module.scss';
 
-const Canvas = ({ 
+const Canvas = forwardRef(({ 
   width = 900,
   height = 700,
   currentTool = 'pen',
   strokeColor = '#000000',
   strokeWidth = 2,
   onCanvasChange
-}) => {
+}, ref) => {
   const canvasRef = useRef(null);
-  const [eraseMode, setEraseMode] = useState(false);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    eraseMode: (mode) => {
+      canvasRef.current?.eraseMode(mode);
+    },
+    exportImage: async (format = 'png') => {
+      return canvasRef.current?.exportImage(format) || '';
+    },
+    clearCanvas: () => {
+      canvasRef.current?.clearCanvas();
+    },
+    undo: () => {
+      canvasRef.current?.undo();
+    }
+  }));
 
   // Handle tool changes
   useEffect(() => {
-    if (currentTool === 'pen') {
-      setEraseMode(false);
-      canvasRef.current?.eraseMode(false);
-    } else if (currentTool === 'eraser') {
-      setEraseMode(true);
+    if (currentTool === 'eraser') {
       canvasRef.current?.eraseMode(true);
+    } else {
+      canvasRef.current?.eraseMode(false);
     }
   }, [currentTool]);
-
-  // Handle canvas changes
-  const handleStroke = () => {
-    if (!canvasRef.current || !onCanvasChange) return;
-    
-    canvasRef.current.exportImage('png').then(dataUrl => {
-      onCanvasChange(dataUrl);
-    });
-  };
 
   // Create grid background
   useEffect(() => {
@@ -66,18 +70,39 @@ const Canvas = ({
   }, [width, height]);
 
   return (
-    <ReactSketchCanvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      strokeWidth={strokeWidth}
-      strokeColor={strokeColor}
-      backgroundImage={backgroundImageUrl}
-      eraserWidth={strokeWidth * 2}
-      onStroke={handleStroke}
-      preserveBackgroundImageAspectRatio="none"
-    />
+    <div className={styles.canvasContainer}>
+      <SmoothCanvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        currentTool={currentTool}
+        strokeColor={strokeColor}
+        strokeWidth={strokeWidth}
+        onCanvasChange={onCanvasChange}
+        backgroundImageUrl={backgroundImageUrl}
+      />
+      
+      {/* Canvas controls */}
+      <div className={styles.controls}>
+        <button 
+          className={styles.undoButton}
+          onClick={() => canvasRef.current?.undo()}
+          title="Undo (Ctrl+Z)"
+        >
+          Undo
+        </button>
+        <button 
+          className={styles.clearButton}
+          onClick={() => canvasRef.current?.clearCanvas()}
+          title="Clear Canvas"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
   );
-};
+});
+
+Canvas.displayName = 'Canvas';
 
 export default Canvas;

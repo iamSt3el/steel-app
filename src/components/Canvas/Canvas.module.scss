@@ -10,6 +10,7 @@
   height: 100%;
   padding: 0;
   position: relative;
+  margin: 0 auto;
 }
 
 .canvas {
@@ -40,6 +41,14 @@
   
   &.selectMode {
     cursor: pointer;
+  }
+  
+  // Ensure smooth canvas performance
+  svg {
+    pointer-events: auto;
+    // Fix for potential rendering issues
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 }
 

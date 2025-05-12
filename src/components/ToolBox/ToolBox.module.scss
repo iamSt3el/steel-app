@@ -20,8 +20,8 @@
   gap: $spacing-md;
   border: 1px solid $border-primary;
   position: relative;
-  overflow: visible; // Change from hidden to visible
-  z-index: 1000; // Ensure it stays on top
+  overflow: visible;
+  z-index: 1000;
   
   // Add a subtle glow effect
   &::before {
@@ -60,10 +60,9 @@
   box-shadow: $shadow-xl;
   border: 1px solid $border-primary;
   min-width: 280px;
-  z-index: 1001; // Above the toolbox
+  z-index: 1001;
   backdrop-filter: blur(10px);
   
-  // Add a subtle animation
   animation: slideDown 0.2s ease-out;
   
   &::before {
@@ -159,6 +158,140 @@
         border-radius: $radius-sm;
         height: 8px;
         border: none;
+      }
+    }
+  }
+}
+
+.colorPickerContainer {
+  position: absolute;
+  top: calc(100% + $spacing-md);
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, $dark-bg-tertiary, $dark-bg-secondary);
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-xl;
+  border: 1px solid $border-primary;
+  min-width: 280px;
+  z-index: 1001;
+  backdrop-filter: blur(10px);
+  
+  animation: slideDown 0.2s ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, $dark-bg-tertiary, $dark-bg-secondary);
+    border: 1px solid $border-primary;
+    border-bottom: none;
+    border-right: none;
+    border-radius: 2px 0 0 0;
+    transform: translateX(-50%) rotate(45deg);
+    z-index: -1;
+  }
+  
+  .colorPalette {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+    
+    .colorOption {
+      width: 40px;
+      height: 40px;
+      border-radius: $radius-md;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all $transition-base;
+      position: relative;
+      
+      &:hover {
+        transform: scale(1.1);
+        box-shadow: $shadow-md;
+      }
+      
+      &.selected {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.3);
+        
+        &::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: white;
+          font-weight: bold;
+          text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        }
+      }
+      
+      // Special styling for white color
+      &[style*="background-color: rgb(255, 255, 255)"],
+      &[style*="background-color: #FFFFFF"],
+      &[style*="background-color: #ffffff"] {
+        border-color: $border-primary;
+        
+        &.selected {
+          border-color: $primary-color;
+          
+          &::after {
+            color: black;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+          }
+        }
+      }
+    }
+  }
+  
+  .customColorSection {
+    border-top: 1px solid $border-secondary;
+    padding-top: $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    
+    .customColorLabel {
+      color: $text-primary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      flex: 1;
+    }
+    
+    .customColorInput {
+      width: 60px;
+      height: 40px;
+      border-radius: $radius-md;
+      border: 2px solid $border-primary;
+      cursor: pointer;
+      background: none;
+      transition: all $transition-base;
+      
+      &:hover {
+        border-color: $border-secondary;
+        transform: scale(1.05);
+      }
+      
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+      
+      // Hide the default color picker appearance in webkit browsers
+      &::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+      
+      &::-webkit-color-swatch {
+        border: none;
+        border-radius: $radius-sm;
       }
     }
   }
