@@ -27,16 +27,12 @@ const SmoothCanvas = forwardRef(({
     const startTimeRef = useRef(null);
     const frameRequestRef = useRef(null);
     
-    // Performance optimizations for eraser
-    const erasingStateRef = useRef({
-        lastEraseTime: 0,
-        erasedInCurrentStroke: new Set(),
-        isErasing: false
-    });
-
-    // Pre-calculate bounding boxes for all paths
+    // Track paths to be erased (showing them faded)
+    const [pathsToErase, setPathsToErase] = useState(new Set());
+    
+    // Simple bounding boxes cache
     const pathBBoxes = useRef(new Map());
-
+    
     // Get device pixel ratio for crisp rendering
     const dpr = window.devicePixelRatio || 1;
 
@@ -97,7 +93,6 @@ const SmoothCanvas = forwardRef(({
     useImperativeHandle(ref, () => ({
         eraseMode: (mode) => {
             setIsErasing(mode);
-            erasingStateRef.current.isErasing = mode;
         },
         exportImage: async (format = 'png') => {
             return exportCanvas(format);
@@ -110,37 +105,38 @@ const SmoothCanvas = forwardRef(({
         }
     }));
 
-    // Get SVG path from stroke with better curves
+    // Optimized SVG path generation
     const getSvgPathFromStroke = useCallback((stroke) => {
         if (!stroke.length) return '';
 
         const d = [];
+        const precision = Math.max(1, Math.floor(stroke.length / 50));
 
         if (stroke.length < 3) {
             const [x0, y0] = stroke[0];
             const [x1, y1] = stroke[stroke.length - 1];
-            d.push('M', x0.toFixed(2), y0.toFixed(2));
-            d.push('L', x1.toFixed(2), y1.toFixed(2));
+            d.push('M', x0.toFixed(1), y0.toFixed(1));
+            d.push('L', x1.toFixed(1), y1.toFixed(1));
         } else {
-            d.push('M', stroke[0][0].toFixed(2), stroke[0][1].toFixed(2));
+            d.push('M', stroke[0][0].toFixed(1), stroke[0][1].toFixed(1));
 
-            for (let i = 1; i < stroke.length - 1; i++) {
+            for (let i = 1; i < stroke.length - 1; i += precision) {
                 const [x0, y0] = stroke[i];
-                const [x1, y1] = stroke[i + 1];
-                const cpx = ((x0 + x1) / 2).toFixed(2);
-                const cpy = ((y0 + y1) / 2).toFixed(2);
-                d.push('Q', x0.toFixed(2), y0.toFixed(2), cpx, cpy);
+                const [x1, y1] = stroke[Math.min(i + precision, stroke.length - 1)];
+                const cpx = ((x0 + x1) / 2).toFixed(1);
+                const cpy = ((y0 + y1) / 2).toFixed(1);
+                d.push('Q', x0.toFixed(1), y0.toFixed(1), cpx, cpy);
             }
 
             const [xLast, yLast] = stroke[stroke.length - 1];
-            d.push('L', xLast.toFixed(2), yLast.toFixed(2));
+            d.push('L', xLast.toFixed(1), yLast.toFixed(1));
         }
 
         d.push('Z');
         return d.join(' ');
     }, []);
 
-    // Get point from event with pressure handling
+    // Get point from event
     const getPointFromEvent = useCallback((e) => {
         const rect = canvasRef.current.getBoundingClientRect();
         const type = e.pointerType || 'mouse';
@@ -153,7 +149,6 @@ const SmoothCanvas = forwardRef(({
         const y = (e.clientY - rect.top) / rect.height * height;
 
         let pressure = 0.5;
-        const timestamp = e.timeStamp || Date.now();
 
         if (type === 'pen') {
             pressure = e.pressure || 0.5;
@@ -161,17 +156,89 @@ const SmoothCanvas = forwardRef(({
             pressure = Math.max(0.1, Math.min(1, pressure));
         } else if (type === 'touch') {
             pressure = 0.6;
-        } else {
-            if (startTimeRef.current) {
-                const timeDiff = timestamp - startTimeRef.current;
-                if (timeDiff < 50) {
-                    pressure = 0.8;
-                }
+        }
+
+        return [x, y, pressure];
+    }, [width, height, inputType]);
+
+    // Simple bounding box calculation from SVG path
+    const calculateBoundingBox = useCallback((pathData) => {
+        const coords = pathData.match(/(-?\d+(?:\.\d+)?)/g);
+        if (!coords || coords.length < 4) {
+            return null;
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        
+        for (let i = 0; i < coords.length - 1; i += 2) {
+            const x = parseFloat(coords[i]);
+            const y = parseFloat(coords[i + 1]);
+            
+            if (!isNaN(x) && !isNaN(y)) {
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
             }
         }
 
-        return [x, y, pressure, timestamp];
-    }, [width, height, inputType]);
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }, []);
+
+    // Check if eraser circle intersects with path bounding box
+    const eraserIntersectsBoundingBox = useCallback((eraserX, eraserY, eraserRadius, bbox) => {
+        // Expand bounding box by eraser radius
+        const expandedBbox = {
+            x: bbox.x - eraserRadius,
+            y: bbox.y - eraserRadius,
+            width: bbox.width + 2 * eraserRadius,
+            height: bbox.height + 2 * eraserRadius
+        };
+
+        // Check if eraser center is inside expanded bounding box
+        return eraserX >= expandedBbox.x && 
+               eraserX <= expandedBbox.x + expandedBbox.width &&
+               eraserY >= expandedBbox.y && 
+               eraserY <= expandedBbox.y + expandedBbox.height;
+    }, []);
+
+    // Handle erasing - mark paths for deletion if they intersect with eraser
+    const handleErase = useCallback((x, y) => {
+        const eraserRadius = eraserWidth / 2;
+        
+        setPathsToErase(prev => {
+            const newPathsToErase = new Set(prev);
+            
+            for (let i = 0; i < paths.length; i++) {
+                // Skip if already marked for erasure
+                if (newPathsToErase.has(i)) continue;
+                
+                const pathObj = paths[i];
+                if (pathObj.type === 'stroke' && pathObj.pathData) {
+                    // Get or calculate bounding box
+                    let bbox = pathBBoxes.current.get(i);
+                    if (!bbox) {
+                        bbox = calculateBoundingBox(pathObj.pathData);
+                        if (bbox) {
+                            pathBBoxes.current.set(i, bbox);
+                        }
+                    }
+                    
+                    // Check if eraser intersects with path
+                    if (bbox && eraserIntersectsBoundingBox(x, y, eraserRadius, bbox)) {
+                        newPathsToErase.add(i);
+                    }
+                }
+            }
+            
+            return newPathsToErase;
+        });
+    }, [paths, eraserWidth, calculateBoundingBox, eraserIntersectsBoundingBox]);
 
     // Enhanced speed-based pressure for mouse
     const calculateSpeedPressure = useCallback((currentPoint, lastPoint) => {
@@ -180,197 +247,20 @@ const SmoothCanvas = forwardRef(({
         const [x1, y1] = currentPoint;
         const [x2, y2] = lastPoint;
         const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-        const speed = distance;
-
-        const maxSpeed = 30;
-        const minSpeed = 2;
 
         let pressure;
-        if (speed < minSpeed) {
+        if (distance < 2) {
             pressure = 0.9;
-        } else if (speed > maxSpeed) {
+        } else if (distance > 30) {
             pressure = 0.1;
         } else {
-            const normalizedSpeed = (speed - minSpeed) / (maxSpeed - minSpeed);
+            const normalizedSpeed = (distance - 2) / 28;
             pressure = 0.9 - (normalizedSpeed * normalizedSpeed * 0.8);
         }
 
         const lastPressure = lastPoint[2] || 0.5;
         return lastPressure * 0.4 + pressure * 0.6;
     }, [inputType]);
-
-    // Calculate bounding box for a path
-    const calculateBoundingBox = useCallback((pathData, strokeWidth = 2) => {
-        try {
-            // Create temporary SVG element to calculate bounding box
-            const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            tempSvg.style.visibility = 'hidden';
-            tempSvg.style.position = 'absolute';
-            tempSvg.style.top = '-9999px';
-            
-            const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            tempPath.setAttribute('d', pathData);
-            tempSvg.appendChild(tempPath);
-            
-            document.body.appendChild(tempSvg);
-            const bbox = tempPath.getBBox();
-            document.body.removeChild(tempSvg);
-            
-            // Add stroke width padding
-            return {
-                x: bbox.x - strokeWidth,
-                y: bbox.y - strokeWidth,
-                width: bbox.width + 2 * strokeWidth,
-                height: bbox.height + 2 * strokeWidth
-            };
-        } catch (e) {
-            // Fallback bounding box
-            return { x: 0, y: 0, width: width, height: height };
-        }
-    }, [width, height]);
-
-    // Check if point is near a path using sampling
-    const isPointNearPath = useCallback((pathData, x, y, tolerance) => {
-        try {
-            // Create temporary path element
-            const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            tempSvg.style.position = 'absolute';
-            tempSvg.style.top = '-9999px';
-            tempSvg.style.visibility = 'hidden';
-            
-            const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            tempPath.setAttribute('d', pathData);
-            tempSvg.appendChild(tempPath);
-            document.body.appendChild(tempSvg);
-            
-            // Get total path length
-            const totalLength = tempPath.getTotalLength();
-            const sampleStep = Math.max(2, totalLength / 50); // Sample fewer points for performance
-            
-            let isNear = false;
-            
-            // Sample points along the path
-            for (let i = 0; i <= totalLength && !isNear; i += sampleStep) {
-                try {
-                    const point = tempPath.getPointAtLength(i);
-                    const distance = Math.sqrt((point.x - x) ** 2 + (point.y - y) ** 2);
-                    
-                    if (distance <= tolerance) {
-                        isNear = true;
-                    }
-                } catch (e) {
-                    // Skip this point if there's an error
-                    continue;
-                }
-            }
-            
-            document.body.removeChild(tempSvg);
-            return isNear;
-        } catch (e) {
-            console.warn('Path sampling failed:', e);
-            return false;
-        }
-    }, []);
-
-    // Optimized eraser with better hit detection
-    const handleErase = useCallback((x, y) => {
-        const currentTime = Date.now();
-        const erasingState = erasingStateRef.current;
-        
-        // Moderate throttling - 45fps for better responsiveness
-        if (currentTime - erasingState.lastEraseTime < 22) {
-            return;
-        }
-        erasingState.lastEraseTime = currentTime;
-
-        const eraserRadius = eraserWidth / 2;
-        
-        setPaths(prev => {
-            let hasErased = false;
-            const newPaths = [];
-            const svg = svgRef.current;
-            
-            for (let i = 0; i < prev.length; i++) {
-                const pathObj = prev[i];
-                
-                // Skip if already erased in this stroke
-                if (erasingState.erasedInCurrentStroke.has(i)) {
-                    continue;
-                }
-
-                if (pathObj.type === 'stroke') {
-                    // Get or calculate bounding box
-                    let bbox = pathBBoxes.current.get(i);
-                    if (!bbox) {
-                        bbox = calculateBoundingBox(pathObj.pathData, pathObj.strokeWidth || strokeWidth);
-                        pathBBoxes.current.set(i, bbox);
-                    }
-
-                    // Quick bounding box collision check
-                    if (x < bbox.x - eraserRadius || x > bbox.x + bbox.width + eraserRadius ||
-                        y < bbox.y - eraserRadius || y > bbox.y + bbox.height + eraserRadius) {
-                        newPaths.push(pathObj);
-                        continue;
-                    }
-
-                    // More accurate hit detection using path sampling
-                    let shouldErase = false;
-                    
-                    // Check if eraser overlaps with the path
-                    if (isPointNearPath(pathObj.pathData, x, y, eraserRadius + (pathObj.strokeWidth || strokeWidth) / 2)) {
-                        shouldErase = true;
-                    } else {
-                        // Check a few points around the eraser circumference for better coverage
-                        const checkPoints = 4;
-                        for (let i = 0; i < checkPoints && !shouldErase; i++) {
-                            const angle = (i / checkPoints) * Math.PI * 2;
-                            const checkX = x + Math.cos(angle) * eraserRadius * 0.7;
-                            const checkY = y + Math.sin(angle) * eraserRadius * 0.7;
-                            
-                            if (isPointNearPath(pathObj.pathData, checkX, checkY, eraserRadius * 0.3)) {
-                                shouldErase = true;
-                            }
-                        }
-                    }
-
-                    if (shouldErase) {
-                        hasErased = true;
-                        erasingState.erasedInCurrentStroke.add(i);
-                        
-                        // Remove from DOM immediately for performance
-                        const pathElement = svg?.children[i + (backgroundImageUrl ? 1 : 0)]; // Account for background rect
-                        if (pathElement && pathElement.parentNode && pathElement.tagName === 'path') {
-                            pathElement.style.opacity = '0';
-                            pathElement.style.display = 'none';
-                        }
-                    } else {
-                        newPaths.push(pathObj);
-                    }
-                } else {
-                    newPaths.push(pathObj);
-                }
-            }
-
-            // Batch DOM updates and notify parent
-            if (hasErased) {
-                // Clean up bounding boxes for erased paths
-                erasingState.erasedInCurrentStroke.forEach(index => {
-                    pathBBoxes.current.delete(index);
-                });
-                
-                // Notify parent with debouncing
-                if (onCanvasChange) {
-                    setTimeout(() => {
-                        exportCanvas('png').then(dataUrl => {
-                            onCanvasChange(dataUrl);
-                        });
-                    }, 100);
-                }
-            }
-
-            return newPaths;
-        });
-    }, [eraserWidth, calculateBoundingBox, strokeWidth, onCanvasChange, isPointNearPath, backgroundImageUrl]);
 
     // Handle mouse enter/leave for eraser visibility
     const handleMouseEnter = useCallback(() => {
@@ -381,8 +271,7 @@ const SmoothCanvas = forwardRef(({
 
     const handleMouseLeave = useCallback(() => {
         setShowEraser(false);
-        // Clear erasing state when leaving
-        erasingStateRef.current.erasedInCurrentStroke.clear();
+        setPathsToErase(new Set());
     }, []);
 
     // Pointer down handler
@@ -400,10 +289,9 @@ const SmoothCanvas = forwardRef(({
 
         const point = getPointFromEvent(e);
         lastPointRef.current = point;
-        startTimeRef.current = Date.now();
 
         if (isErasing) {
-            erasingStateRef.current.erasedInCurrentStroke.clear();
+            setPathsToErase(new Set());
             handleErase(point[0], point[1]);
         } else {
             setCurrentPath([point]);
@@ -417,9 +305,9 @@ const SmoothCanvas = forwardRef(({
             tempPath.setAttribute('fill-rule', 'nonzero');
             svg.appendChild(tempPath);
         }
-    }, [isErasing, getPointFromEvent, strokeColor]);
+    }, [isErasing, getPointFromEvent, strokeColor, handleErase]);
 
-    // Pointer move handler with improved performance
+    // Pointer move handler
     const handlePointerMove = useCallback((e) => {
         if (!canvasRef.current) return;
 
@@ -445,51 +333,22 @@ const SmoothCanvas = forwardRef(({
             const point = getPointFromEvent(e);
 
             if (isErasing) {
-                // Always erase at current point
                 handleErase(point[0], point[1]);
-                
-                // For faster movements, add interpolation
-                const lastPoint = lastPointRef.current;
-                if (lastPoint) {
-                    const distance = Math.sqrt(
-                        (point[0] - lastPoint[0]) ** 2 + (point[1] - lastPoint[1]) ** 2
-                    );
-                    
-                    // Interpolate if movement is significant
-                    if (distance > eraserWidth * 0.5) {
-                        const steps = Math.min(3, Math.ceil(distance / (eraserWidth * 0.5)));
-                        
-                        for (let i = 1; i < steps; i++) {
-                            const t = i / steps;
-                            const interpX = lastPoint[0] + (point[0] - lastPoint[0]) * t;
-                            const interpY = lastPoint[1] + (point[1] - lastPoint[1]) * t;
-                            handleErase(interpX, interpY);
-                        }
-                    }
-                }
             } else {
                 // Drawing mode
                 if (inputType === 'mouse' && lastPointRef.current) {
                     point[2] = calculateSpeedPressure(point, lastPointRef.current);
                 }
 
-                let shouldAddPoint = true;
-                if (inputType === 'pen' && lastPointRef.current) {
-                    const [x1, y1] = point;
-                    const [x2, y2] = lastPointRef.current;
-                    const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-                    shouldAddPoint = distance > 0.1;
-                }
+                setCurrentPath(prev => {
+                    const newPath = [...prev, point];
 
-                if (shouldAddPoint) {
-                    setCurrentPath(prev => {
-                        const newPath = [...prev, point];
-
-                        // Update temp path
+                    // Update temp path
+                    if (newPath.length > 1) {
                         const svg = svgRef.current;
                         const tempPath = svg?.querySelector('#temp-path');
 
-                        if (tempPath && newPath.length > 1) {
+                        if (tempPath) {
                             try {
                                 const stroke = getStroke(newPath, strokeOptions);
                                 const pathData = getSvgPathFromStroke(stroke);
@@ -498,17 +357,17 @@ const SmoothCanvas = forwardRef(({
                                 console.warn('Error updating path:', error);
                             }
                         }
+                    }
 
-                        return newPath;
-                    });
-                }
+                    return newPath;
+                });
             }
 
             lastPointRef.current = point;
         });
-    }, [currentTool, isDrawing, isErasing, getPointFromEvent, strokeOptions, getSvgPathFromStroke, inputType, calculateSpeedPressure, handleErase, eraserWidth]);
+    }, [currentTool, isDrawing, isErasing, getPointFromEvent, strokeOptions, getSvgPathFromStroke, inputType, calculateSpeedPressure, handleErase]);
 
-    // Pointer up handler
+    // Pointer up handler - actually delete marked paths
     const handlePointerUp = useCallback((e) => {
         if (!isDrawing || e.pointerId !== activePointerRef.current) return;
 
@@ -525,7 +384,41 @@ const SmoothCanvas = forwardRef(({
         }
 
         if (isErasing) {
-            erasingStateRef.current.erasedInCurrentStroke.clear();
+            // Actually delete the marked paths
+            if (pathsToErase.size > 0) {
+                setPaths(prev => {
+                    const newPaths = prev.filter((_, index) => !pathsToErase.has(index));
+                    
+                    // Clear bounding box cache for deleted paths
+                    pathsToErase.forEach(index => {
+                        pathBBoxes.current.delete(index);
+                    });
+                    
+                    // Rebuild bounding box map with new indices
+                    const newBBoxMap = new Map();
+                    newPaths.forEach((path, newIndex) => {
+                        const originalIndex = prev.findIndex(p => p === path);
+                        if (originalIndex !== -1 && pathBBoxes.current.has(originalIndex)) {
+                            newBBoxMap.set(newIndex, pathBBoxes.current.get(originalIndex));
+                        }
+                    });
+                    pathBBoxes.current = newBBoxMap;
+                    
+                    return newPaths;
+                });
+                
+                // Notify parent of change
+                if (onCanvasChange) {
+                    setTimeout(() => {
+                        exportCanvas('png').then(dataUrl => {
+                            onCanvasChange(dataUrl);
+                        });
+                    }, 16);
+                }
+            }
+            
+            // Clear marked paths
+            setPathsToErase(new Set());
         } else if (currentPath.length > 0) {
             try {
                 const finalPoint = getPointFromEvent(e);
@@ -551,22 +444,25 @@ const SmoothCanvas = forwardRef(({
                         strokeWidth: strokeWidth
                     }];
                     
-                    // Pre-calculate bounding box for the new path
+                    // Calculate bounding box for new path
                     const newIndex = newPaths.length - 1;
-                    pathBBoxes.current.set(newIndex, calculateBoundingBox(pathData, strokeWidth));
+                    const bbox = calculateBoundingBox(pathData);
+                    if (bbox) {
+                        pathBBoxes.current.set(newIndex, bbox);
+                    }
                     
                     return newPaths;
                 });
 
                 setCurrentPath([]);
 
-                // Notify parent of change
+                // Notify parent
                 if (onCanvasChange) {
                     setTimeout(() => {
                         exportCanvas('png').then(dataUrl => {
                             onCanvasChange(dataUrl);
                         });
-                    }, 10);
+                    }, 16);
                 }
             } catch (error) {
                 console.error('Error finalizing stroke:', error);
@@ -574,14 +470,14 @@ const SmoothCanvas = forwardRef(({
         }
 
         lastPointRef.current = null;
-    }, [isDrawing, isErasing, currentPath, strokeColor, strokeOptions, getSvgPathFromStroke, inputType, strokeWidth, onCanvasChange, getPointFromEvent, calculateBoundingBox]);
+    }, [isDrawing, isErasing, currentPath, strokeColor, strokeOptions, getSvgPathFromStroke, inputType, strokeWidth, onCanvasChange, getPointFromEvent, calculateBoundingBox, pathsToErase]);
 
     // Clear canvas
     const clearCanvas = useCallback(() => {
         setPaths([]);
         setCurrentPath([]);
         pathBBoxes.current.clear();
-        erasingStateRef.current.erasedInCurrentStroke.clear();
+        setPathsToErase(new Set());
 
         const svg = svgRef.current;
         const tempPath = svg?.querySelector('#temp-path');
@@ -592,7 +488,7 @@ const SmoothCanvas = forwardRef(({
                 exportCanvas('png').then(dataUrl => {
                     onCanvasChange(dataUrl);
                 });
-            }, 10);
+            }, 16);
         }
     }, [onCanvasChange]);
 
@@ -602,8 +498,6 @@ const SmoothCanvas = forwardRef(({
             if (prev.length === 0) return prev;
             
             const newPaths = prev.slice(0, -1);
-            
-            // Clean up bounding box for removed path
             pathBBoxes.current.delete(prev.length - 1);
             
             if (onCanvasChange) {
@@ -611,7 +505,7 @@ const SmoothCanvas = forwardRef(({
                     exportCanvas('png').then(dataUrl => {
                         onCanvasChange(dataUrl);
                     });
-                }, 10);
+                }, 16);
             }
             return newPaths;
         });
@@ -665,10 +559,9 @@ const SmoothCanvas = forwardRef(({
     useEffect(() => {
         const newIsErasing = currentTool === 'eraser';
         setIsErasing(newIsErasing);
-        erasingStateRef.current.isErasing = newIsErasing;
         
         if (!newIsErasing) {
-            erasingStateRef.current.erasedInCurrentStroke.clear();
+            setPathsToErase(new Set());
         }
     }, [currentTool]);
 
@@ -679,7 +572,6 @@ const SmoothCanvas = forwardRef(({
                 cancelAnimationFrame(frameRequestRef.current);
             }
             pathBBoxes.current.clear();
-            erasingStateRef.current.erasedInCurrentStroke.clear();
         };
     }, []);
 
@@ -739,11 +631,15 @@ const SmoothCanvas = forwardRef(({
                         fill={pathObj.color}
                         stroke="none"
                         fillRule="nonzero"
+                        style={{
+                            opacity: pathsToErase.has(index) ? 0.3 : 1,
+                            transition: 'opacity 0.1s ease'
+                        }}
                     />
                 ))}
             </svg>
 
-            {/* Optimized eraser cursor */}
+            {/* Eraser cursor */}
             {currentTool === 'eraser' && showEraser && (
                 <div
                     className={styles.eraserCursor}
@@ -757,7 +653,7 @@ const SmoothCanvas = forwardRef(({
                         borderRadius: '50%',
                         pointerEvents: 'none',
                         backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        transform: 'translateZ(0)', // Force hardware acceleration
+                        transform: 'translateZ(0)',
                     }}
                 />
             )}
