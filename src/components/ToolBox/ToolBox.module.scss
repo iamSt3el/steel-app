@@ -59,7 +59,7 @@
   border-radius: $radius-lg;
   box-shadow: $shadow-xl;
   border: 1px solid $border-primary;
-  min-width: 280px;
+  min-width: 320px;
   z-index: 1001;
   backdrop-filter: blur(10px);
   
@@ -82,6 +82,46 @@
     z-index: -1;
   }
   
+  .strokePresets {
+    margin-bottom: $spacing-xl;
+    
+    .presetsHeader {
+      color: $text-secondary;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-medium;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: $spacing-md;
+      text-align: center;
+    }
+    
+    .presetButtons {
+      display: flex;
+      gap: $spacing-sm;
+      justify-content: center;
+      flex-wrap: wrap;
+      
+      .presetButton {
+        padding: $spacing-sm;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid $border-secondary;
+        border-radius: $radius-md;
+        cursor: pointer;
+        transition: all $transition-base;
+        
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: $border-primary;
+        }
+        
+        &.active {
+          background: rgba($primary-color, 0.2);
+          border-color: $primary-color;
+        }
+      }
+    }
+  }
+  
   .sliderGroup {
     margin-bottom: $spacing-lg;
     
@@ -98,8 +138,36 @@
       text-align: center;
     }
     
+    .sliderWrapper {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      
+      .sliderPreview {
+        width: 50px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: $radius-sm;
+        border: 1px solid $border-secondary;
+      }
+      
+      .eraserPreview {
+        width: 50px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: $radius-sm;
+        border: 1px solid $border-secondary;
+      }
+    }
+    
     .slider {
-      width: 100%;
+      flex: 1;
       height: 8px;
       border-radius: $radius-sm;
       background: rgba(255, 255, 255, 0.1);
@@ -173,7 +241,7 @@
   border-radius: $radius-lg;
   box-shadow: $shadow-xl;
   border: 1px solid $border-primary;
-  min-width: 280px;
+  min-width: 320px;
   z-index: 1001;
   backdrop-filter: blur(10px);
   
@@ -203,13 +271,14 @@
     margin-bottom: $spacing-lg;
     
     .colorOption {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: $radius-md;
       border: 2px solid transparent;
       cursor: pointer;
       transition: all $transition-base;
       position: relative;
+      overflow: hidden;
       
       &:hover {
         transform: scale(1.1);
@@ -229,10 +298,11 @@
           color: white;
           font-weight: bold;
           text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+          font-size: 18px;
         }
       }
       
-      // Special styling for white color
+      // Special styling for white and light colors
       &[style*="background-color: rgb(255, 255, 255)"],
       &[style*="background-color: #FFFFFF"],
       &[style*="background-color: #ffffff"] {
@@ -253,6 +323,7 @@
   .customColorSection {
     border-top: 1px solid $border-secondary;
     padding-top: $spacing-lg;
+    margin-bottom: $spacing-lg;
     display: flex;
     align-items: center;
     gap: $spacing-md;
@@ -284,7 +355,7 @@
         box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
       }
       
-      // Hide the default color picker appearance in webkit browsers
+      // Hide the default color picker appearance
       &::-webkit-color-swatch-wrapper {
         padding: 0;
       }
@@ -295,8 +366,34 @@
       }
     }
   }
+  
+  .colorPreview {
+    border-top: 1px solid $border-secondary;
+    padding-top: $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    
+    .previewLabel {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+    }
+    
+    .currentColorSwatch {
+      padding: $spacing-sm;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid $border-primary;
+      border-radius: $radius-md;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  }
 }
 
+// Animation keyframes
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -305,5 +402,21 @@
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+// Mobile optimizations
+@media (max-width: 768px) {
+  .sliderContainer,
+  .colorPickerContainer {
+    min-width: 280px;
+    left: 0;
+    right: 0;
+    margin: 0 $spacing-md;
+    transform: none;
+    
+    &::before {
+      left: 50%;
+    }
   }
 }

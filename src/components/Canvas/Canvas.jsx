@@ -58,7 +58,7 @@ const Canvas = forwardRef(({
       for (let x = gridSize; x < width; x += gridSize) {
         for (let y = gridSize; y < height; y += gridSize) {
           ctx.beginPath();
-          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
           ctx.fill();
         }
       }

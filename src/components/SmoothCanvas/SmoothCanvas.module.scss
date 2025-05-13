@@ -13,21 +13,26 @@
   transition: all $transition-base;
   overflow: hidden;
   
-  // Optimize for pen input
-  touch-action: pan-x pan-y;
+  // Optimize for high-performance drawing
+  touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   
-  // High performance rendering
+  // Hardware acceleration for better performance
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   will-change: contents;
   contain: layout style paint;
+  
+  // Ensure proper stacking context
+  isolation: isolate;
   
   &:hover {
     box-shadow: $shadow-md;
   }
   
-  // Different cursors for different tools
+  // Tool-specific cursors
   &.penMode {
     cursor: crosshair;
   }
@@ -48,21 +53,29 @@
   z-index: 1;
   background: transparent;
   
-  // Optimized touch handling for pen input
-  touch-action: pan-x pan-y;
+  // Essential for pen/stylus input
+  touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   
-  // High performance optimizations
+  // Performance optimizations
   will-change: transform;
   contain: strict;
   
-  // Prevent any smoothing for crisp input
+  // Crisp rendering for high DPI
   image-rendering: -webkit-optimize-contrast;
   image-rendering: pixelated;
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: unset;
+  
+  // Prevent context menu on right click
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .svg {
@@ -72,15 +85,16 @@
   z-index: 2;
   background: transparent;
   
-  // Optimize SVG rendering for smooth lines
+  // SVG rendering optimizations
   shape-rendering: geometricPrecision;
   text-rendering: geometricPrecision;
+  color-rendering: auto;
   
-  // High performance optimizations
+  // Performance optimizations
   will-change: contents;
   contain: layout style paint;
   
-  // Ensure the SVG doesn't capture pointer events
+  // Prevent capturing pointer events
   pointer-events: none;
   
   // Optimize path rendering
@@ -89,12 +103,18 @@
     shape-rendering: geometricPrecision;
     fill-rule: nonzero;
     
-    // Temporary paths with optimized rendering
+    // Use fill instead of stroke for better performance
+    stroke: none;
+    
+    // Optimize temporary paths
     &#temp-path {
-      opacity: 0.9;
+      opacity: 0.98; // Slight transparency for visual feedback
       fill-rule: nonzero;
-      shape-rendering: optimizeSpeed; // Faster rendering for temp paths
-      will-change: d; // Optimize for frequent d attribute changes
+      shape-rendering: optimizeSpeed; // Faster rendering
+      will-change: d; // Optimize for frequent updates
+      
+      // Reduce antialiasing for performance
+      shape-rendering: crispEdges;
     }
   }
 }
@@ -107,19 +127,24 @@
   z-index: 10;
   background: rgba($error, 0.1);
   
-  animation: eraserPulse 1s infinite;
+  // Smooth animation
+  animation: eraserPulse 1s infinite ease-in-out;
+  
+  // Hardware acceleration
+  transform: translateZ(0);
+  will-change: transform;
   
   @keyframes eraserPulse {
     0% {
-      transform: scale(1);
+      transform: scale(1) translateZ(0);
       opacity: 0.8;
     }
     50% {
-      transform: scale(1.05);
+      transform: scale(1.05) translateZ(0);
       opacity: 0.6;
     }
     100% {
-      transform: scale(1);
+      transform: scale(1) translateZ(0);
       opacity: 0.8;
     }
   }
@@ -129,24 +154,28 @@
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .canvas,
   .svg {
-    // Ensure crisp rendering on high DPI displays
     image-rendering: -webkit-optimize-contrast;
     image-rendering: pixelated;
     
-    // Additional high DPI optimizations
+    // Additional optimizations for high DPI
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
     will-change: transform;
+    
+    // Ensure sharp text rendering
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: auto;
   }
 }
 
-// Pen input specific optimizations
+// Pen input optimizations
 @media (pointer: fine) {
   .canvasContainer {
     .canvas,
     .svg {
       // Optimize for high precision pointing devices
-      touch-action: pan-x pan-y;
+      touch-action: none;
+      -webkit-touch-callout: none;
     }
   }
 }
@@ -156,8 +185,29 @@
   .canvasContainer {
     .canvas,
     .svg {
-      touch-action: pan-x pan-y;
+      touch-action: none;
       -webkit-overflow-scrolling: touch;
+      
+      // Prevent zoom on double tap
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
+  }
+}
+
+// Hover-capable devices
+@media (hover: hover) {
+  .canvasContainer {
+    transition: box-shadow $transition-base;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .canvasContainer,
+  .eraserCursor {
+    animation: none;
+    transition: none;
   }
 }
