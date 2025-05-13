@@ -27,10 +27,11 @@ const SmoothCanvas = forwardRef(({
     const startTimeRef = useRef(null);
     const frameRequestRef = useRef(null);
     
-    // Track paths to be erased (showing them faded)
+    // Track paths with stable IDs instead of array indices
+    const [nextPathId, setNextPathId] = useState(0);
     const [pathsToErase, setPathsToErase] = useState(new Set());
     
-    // Simple bounding boxes cache
+    // Simple bounding boxes cache using path IDs
     const pathBBoxes = useRef(new Map());
     
     // Get device pixel ratio for crisp rendering
@@ -43,21 +44,47 @@ const SmoothCanvas = forwardRef(({
             smoothing: 0.5,
             streamline: 0.5,
             easing: (t) => t,
-            start: { taper: 0, cap: true },
-            end: { taper: strokeWidth * 0.2, cap: true }
+            start: { 
+                taper: strokeWidth * 0.5,  // Smooth start taper
+                cap: true 
+            },
+            end: { 
+                taper: strokeWidth * 2,    // Much longer end taper for smooth endings
+                cap: true 
+            }
         };
 
         if (inputType === 'pen') {
             return {
                 ...baseOptions,
-                thinning: 0.5,
+                thinning: 0.3,        // Less thinning for more consistent line
                 simulatePressure: false,
+                smoothing: 0.7,       // More smoothing for pen
+                streamline: 0.6,      // Higher streamline for smoother curves
+                start: { 
+                    taper: strokeWidth * 0.3,  // Moderate start taper
+                    cap: true 
+                },
+                end: { 
+                    taper: strokeWidth * 2.5,  // Longer end taper
+                    cap: true 
+                }
             };
         } else {
             return {
                 ...baseOptions,
-                thinning: 0.6,
+                thinning: 0.4,        // Moderate thinning
                 simulatePressure: true,
+                smoothing: 0.6,       // Good smoothing
+                streamline: 0.5,      // Balanced streamline
+                start: { 
+                    taper: strokeWidth * 0.5, 
+                    cap: true 
+                },
+                end: { 
+                    taper: strokeWidth * 2,    // Longer end taper
+                    cap: true 
+                }
             };
         }
     }, [strokeWidth, inputType]);
@@ -92,7 +119,29 @@ const SmoothCanvas = forwardRef(({
         return d.join(' ');
     }, []);
 
-    // Get point from event
+    // Add gradual pressure reduction points for smooth endings
+    const createSmoothEnding = useCallback((points) => {
+        if (points.length < 2) return points;
+        
+        const lastPoint = points[points.length - 1];
+        const secondLastPoint = points[points.length - 2] || lastPoint;
+        
+        // Create tapering points
+        const smoothPoints = [...points];
+        const taperSteps = Math.min(3, strokeWidth / 2); // More taper steps for thicker strokes
+        
+        for (let i = 1; i <= taperSteps; i++) {
+            const t = i / (taperSteps + 1);
+            const pressure = lastPoint[2] * (1 - t * 0.8); // Gradually reduce pressure
+            const x = lastPoint[0];
+            const y = lastPoint[1];
+            smoothPoints.push([x, y, Math.max(0.1, pressure)]);
+        }
+        
+        return smoothPoints;
+    }, [strokeWidth]);
+
+    // Get point from event with better pressure handling
     const getPointFromEvent = useCallback((e) => {
         const rect = canvasRef.current.getBoundingClientRect();
         const type = e.pointerType || 'mouse';
@@ -102,7 +151,21 @@ const SmoothCanvas = forwardRef(({
 
         const x = (e.clientX - rect.left) / rect.width * width;
         const y = (e.clientY - rect.top) / rect.height * height;
-        const pressure = e.pressure || 0.5;
+        
+        let pressure = 0.5;
+        
+        if (type === 'pen') {
+            // Use natural pen pressure with smoothing
+            pressure = e.pressure || 0.5;
+            // Clamp pressure to a reasonable range
+            pressure = Math.max(0.2, Math.min(0.9, pressure));
+        } else if (type === 'touch') {
+            // Consistent pressure for touch
+            pressure = 0.6;
+        } else {
+            // For mouse, use velocity-based pressure but start with full pressure
+            pressure = 0.8; // Start with higher pressure for mouse
+        }
 
         return [x, y, pressure];
     }, [width, height, inputType]);
@@ -161,23 +224,23 @@ const SmoothCanvas = forwardRef(({
             const newPathsToErase = new Set(prev); // Start with existing marked paths
             
             for (let i = 0; i < paths.length; i++) {
-                // Skip if already marked for erasure
-                if (newPathsToErase.has(i)) continue;
-                
                 const pathObj = paths[i];
+                // Skip if already marked for erasure
+                if (newPathsToErase.has(pathObj.id)) continue;
+                
                 if (pathObj.type === 'stroke' && pathObj.pathData) {
-                    // Get or calculate bounding box
-                    let bbox = pathBBoxes.current.get(i);
+                    // Get or calculate bounding box using path ID
+                    let bbox = pathBBoxes.current.get(pathObj.id);
                     if (!bbox) {
                         bbox = calculateBoundingBox(pathObj.pathData);
                         if (bbox) {
-                            pathBBoxes.current.set(i, bbox);
+                            pathBBoxes.current.set(pathObj.id, bbox);
                         }
                     }
                     
                     // Check if eraser intersects with path
                     if (bbox && eraserIntersectsBoundingBox(x, y, eraserRadius, bbox)) {
-                        newPathsToErase.add(i);
+                        newPathsToErase.add(pathObj.id);
                     }
                 }
             }
@@ -220,15 +283,30 @@ const SmoothCanvas = forwardRef(({
         } else {
             setCurrentPath([point]);
 
-            // Create temp path
+            // Create temp path and draw initial dot/stroke immediately
             const svg = svgRef.current;
             const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             tempPath.id = 'temp-path';
             tempPath.setAttribute('fill', strokeColor);
             tempPath.setAttribute('stroke', 'none');
+            
+            // Create an initial stroke from just the first point
+            try {
+                const stroke = getStroke([point], strokeOptions);
+                const pathData = getSvgPathFromStroke(stroke);
+                tempPath.setAttribute('d', pathData);
+            } catch (error) {
+                // Fallback: create a simple circle if getStroke fails with single point
+                const radius = strokeWidth / 2;
+                const pathData = `M ${point[0] - radius},${point[1]} 
+                                 A ${radius},${radius} 0 1,1 ${point[0] + radius},${point[1]} 
+                                 A ${radius},${radius} 0 1,1 ${point[0] - radius},${point[1]} Z`;
+                tempPath.setAttribute('d', pathData);
+            }
+            
             svg.appendChild(tempPath);
         }
-    }, [isErasing, getPointFromEvent, strokeColor, handleErase]);
+    }, [isErasing, getPointFromEvent, strokeColor, handleErase, strokeOptions, getSvgPathFromStroke, strokeWidth]);
 
     // Pointer move handler
     const handlePointerMove = useCallback((e) => {
@@ -300,22 +378,12 @@ const SmoothCanvas = forwardRef(({
             // Actually delete the marked paths
             if (pathsToErase.size > 0) {
                 setPaths(prev => {
-                    const newPaths = prev.filter((_, index) => !pathsToErase.has(index));
+                    const newPaths = prev.filter(path => !pathsToErase.has(path.id));
                     
                     // Clear bounding box cache for deleted paths
-                    pathsToErase.forEach(index => {
-                        pathBBoxes.current.delete(index);
+                    pathsToErase.forEach(pathId => {
+                        pathBBoxes.current.delete(pathId);
                     });
-                    
-                    // Rebuild cache with new indices
-                    const newBBoxMap = new Map();
-                    newPaths.forEach((path, newIndex) => {
-                        const originalIndex = prev.findIndex(p => p === path);
-                        if (originalIndex !== -1 && pathBBoxes.current.has(originalIndex)) {
-                            newBBoxMap.set(newIndex, pathBBoxes.current.get(originalIndex));
-                        }
-                    });
-                    pathBBoxes.current = newBBoxMap;
                     
                     return newPaths;
                 });
@@ -334,7 +402,12 @@ const SmoothCanvas = forwardRef(({
             setPathsToErase(new Set());
         } else if (currentPath.length > 0) {
             try {
-                const stroke = getStroke(currentPath, strokeOptions);
+                // Add smooth ending to the stroke
+                const finalPoint = getPointFromEvent(e);
+                const finalPath = [...currentPath, finalPoint];
+                const smoothedPath = createSmoothEnding(finalPath);
+                
+                const stroke = getStroke(smoothedPath, strokeOptions);
                 const pathData = getSvgPathFromStroke(stroke);
 
                 // Remove temp path
@@ -344,26 +417,28 @@ const SmoothCanvas = forwardRef(({
                     tempPath.remove();
                 }
 
-                // Add to paths
+                // Add to paths with a stable ID
                 setPaths(prev => {
-                    const newPaths = [...prev, {
+                    const newPath = {
+                        id: nextPathId,
                         pathData,
                         color: strokeColor,
                         type: 'stroke',
                         inputType: inputType,
                         strokeWidth: strokeWidth
-                    }];
+                    };
                     
-                    // Calculate bounding box for new path
-                    const newIndex = newPaths.length - 1;
+                    // Calculate bounding box for new path using its ID
                     const bbox = calculateBoundingBox(pathData);
                     if (bbox) {
-                        pathBBoxes.current.set(newIndex, bbox);
+                        pathBBoxes.current.set(nextPathId, bbox);
                     }
                     
-                    return newPaths;
+                    return [...prev, newPath];
                 });
 
+                // Increment the path ID counter
+                setNextPathId(prev => prev + 1);
                 setCurrentPath([]);
 
                 // Notify parent
@@ -380,7 +455,7 @@ const SmoothCanvas = forwardRef(({
         }
 
         lastPointRef.current = null;
-    }, [isDrawing, isErasing, currentPath, strokeColor, strokeOptions, getSvgPathFromStroke, inputType, strokeWidth, onCanvasChange, pathsToErase, calculateBoundingBox]);
+    }, [isDrawing, isErasing, currentPath, strokeColor, strokeOptions, getSvgPathFromStroke, inputType, strokeWidth, onCanvasChange, pathsToErase, calculateBoundingBox, createSmoothEnding, getPointFromEvent, nextPathId]);
 
     // Clear canvas
     const clearCanvas = useCallback(() => {
@@ -405,7 +480,15 @@ const SmoothCanvas = forwardRef(({
     // Undo last stroke
     const undo = useCallback(() => {
         setPaths(prev => {
+            if (prev.length === 0) return prev;
+            
             const newPaths = prev.slice(0, -1);
+            // Remove the bounding box for the last path
+            const lastPath = prev[prev.length - 1];
+            if (lastPath && lastPath.id !== undefined) {
+                pathBBoxes.current.delete(lastPath.id);
+            }
+            
             if (onCanvasChange) {
                 setTimeout(() => {
                     exportCanvas('png').then(dataUrl => {
@@ -505,15 +588,15 @@ const SmoothCanvas = forwardRef(({
                 }}
             >
                 {/* Rendered paths */}
-                {paths.map((pathObj, index) => (
+                {paths.map((pathObj) => (
                     <path
-                        key={index}
+                        key={pathObj.id}
                         d={pathObj.pathData}
                         fill={pathObj.color}
                         stroke="none"
                         fillRule="nonzero"
                         style={{
-                            opacity: pathsToErase.has(index) ? 0.3 : 1,
+                            opacity: pathsToErase.has(pathObj.id) ? 0.3 : 1,
                             transition: 'opacity 0.1s ease'
                         }}
                     />
