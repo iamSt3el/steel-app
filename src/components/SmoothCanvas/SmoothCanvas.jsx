@@ -4,8 +4,8 @@ import { getStroke } from 'perfect-freehand';
 import styles from './SmoothCanvas.module.scss';
 
 const SmoothCanvas = forwardRef(({
-    width = 900,
-    height = 700,
+    width = 800,
+    height = 900,
     currentTool = 'pen',
     strokeColor = '#000000',
     strokeWidth = 5,
@@ -102,8 +102,29 @@ const SmoothCanvas = forwardRef(({
         },
         undo: () => {
             undo();
+        },
+        loadData: (dataURL) => {
+            loadCanvasData(dataURL);
         }
     }));
+
+    // Load canvas data from dataURL
+    const loadCanvasData = useCallback((dataURL) => {
+        if (!canvasRef.current || !dataURL) return;
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+            // Clear existing content 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw the loaded image
+            ctx.drawImage(img, 0, 0, width, height);
+        };
+        
+        img.src = dataURL;
+    }, [width, height]);
 
     // Optimized SVG path generation
     const getSvgPathFromStroke = useCallback((stroke) => {

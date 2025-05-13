@@ -1,0 +1,195 @@
+.container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #2c3e50;
+      margin: 0;
+    }
+  }
+  
+  .createBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background-color: #2980b9;
+      transform: translateY(-2px);
+    }
+  }
+  
+  .createForm {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+  }
+  
+  .nameInput {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    outline: none;
+    
+    &:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+  }
+  
+  .formButtons {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .saveBtn, .cancelBtn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .saveBtn {
+    background-color: #27ae60;
+    color: white;
+    
+    &:hover {
+      background-color: #219a52;
+    }
+  }
+  
+  .cancelBtn {
+    background-color: #e74c3c;
+    color: white;
+    
+    &:hover {
+      background-color: #c0392b;
+    }
+  }
+  
+  .notebookGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    min-height: 200px;
+  }
+  
+  .notebookCard {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      border-color: #3498db;
+    }
+    
+    &.active {
+      border-color: #3498db;
+      background-color: #f8fbff;
+    }
+  }
+  
+  .cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .notebookIcon {
+    color: #3498db;
+  }
+  
+  .deleteBtn {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: #fee;
+    }
+  }
+  
+  .notebookName {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 1rem 0;
+  }
+  
+  .notebookInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+  }
+  
+  .pageCount {
+    font-weight: 500;
+  }
+  
+  .date {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .emptyState {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #7f8c8d;
+    padding: 3rem;
+    
+    .emptyIcon {
+      opacity: 0.3;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      margin: 0.5rem 0;
+      
+      &:first-of-type {
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+    }
+  }

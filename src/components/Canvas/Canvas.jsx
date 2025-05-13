@@ -1,18 +1,20 @@
-// src/components/Canvas/Canvas.jsx
 import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import SmoothCanvas from '../SmoothCanvas';
 import styles from './Canvas.module.scss';
 
 const Canvas = forwardRef(({ 
-  width = 900,
-  height = 700,
+  width = 800,
+  height = 900,
   currentTool = 'pen',
   strokeColor = '#000000',
   strokeWidth = 2,
-  onCanvasChange
+  eraserWidth = 10,
+  onCanvasChange,
+  initialData = null
 }, ref) => {
   const canvasRef = useRef(null);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
+  const hasLoadedData = useRef(false);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -27,8 +29,23 @@ const Canvas = forwardRef(({
     },
     undo: () => {
       canvasRef.current?.undo();
+    },
+    loadData: (dataURL) => {
+      canvasRef.current?.loadData(dataURL);
     }
   }));
+
+  // Load initial data when component mounts or when initialData changes
+  useEffect(() => {
+    if (initialData && canvasRef.current && !hasLoadedData.current) {
+      canvasRef.current.loadData(initialData);
+      hasLoadedData.current = true;
+    }
+    // Reset the flag when initialData changes
+    if (!initialData) {
+      hasLoadedData.current = false;
+    }
+  }, [initialData]);
 
   // Handle tool changes
   useEffect(() => {
@@ -39,34 +56,12 @@ const Canvas = forwardRef(({
     }
   }, [currentTool]);
 
-  // Create grid background
+  // Create transparent background (dots will be handled by CSS)
   useEffect(() => {
-    const createGridBackground = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const gridSize = 20;
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      // White background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
-      
-      // Draw grid dots
-      ctx.fillStyle = '#f0f0f0';
-      for (let x = gridSize; x < width; x += gridSize) {
-        for (let y = gridSize; y < height; y += gridSize) {
-          ctx.beginPath();
-          ctx.arc(x, y, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      
-      setBackgroundImageUrl(canvas.toDataURL());
-    };
-    
-    createGridBackground();
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    setBackgroundImageUrl(canvas.toDataURL());
   }, [width, height]);
 
   return (
@@ -78,27 +73,10 @@ const Canvas = forwardRef(({
         currentTool={currentTool}
         strokeColor={strokeColor}
         strokeWidth={strokeWidth}
+        eraserWidth={eraserWidth}
         onCanvasChange={onCanvasChange}
         backgroundImageUrl={backgroundImageUrl}
       />
-      
-      {/* Canvas controls */}
-      <div className={styles.controls}>
-        <button 
-          className={styles.undoButton}
-          onClick={() => canvasRef.current?.undo()}
-          title="Undo (Ctrl+Z)"
-        >
-          Undo
-        </button>
-        <button 
-          className={styles.clearButton}
-          onClick={() => canvasRef.current?.clearCanvas()}
-          title="Clear Canvas"
-        >
-          Clear
-        </button>
-      </div>
     </div>
   );
 });

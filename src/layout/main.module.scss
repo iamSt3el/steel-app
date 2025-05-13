@@ -3,21 +3,22 @@
 .main {
     display: flex;
     flex-direction: column;
-    height: 100vh; // Take full viewport height
+    height: 100vh;
     color: $text-primary;
+    background: linear-gradient(135deg, $dark-bg-primary, $dark-bg-secondary);
 
     .outterBox {
         padding-top: 20px;
         position: relative;
         width: 100%;
-        height: 80px; // Fixed height for the toolbar area
-        flex-shrink: 0; // Don't shrink this area
+        height: 80px;
+        flex-shrink: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         background-color: transparent;
-        z-index: 10; // Ensure it stays on top
-        overflow: visible; // Allow toolbar items to overflow
+        z-index: 10;
+        overflow: visible;
         
         .menuBox {
             position: absolute;
@@ -25,18 +26,16 @@
         }
 
         .toolbox {
-            // already centered via parent
             position: relative;
-            overflow: visible; // Allow slider to overflow
+            overflow: visible;
         }
     }
 
     .canvasBox {
-        flex: 1; // Take remaining space
+        flex: 1;
         display: flex;
         flex-direction: column;
-        padding: $spacing-md;
-        overflow: hidden; // Prevent overflow issues
-        min-height: 0; // Important for flex children to shrink properly
+        overflow: hidden;
+        min-height: 0;
     }
 }

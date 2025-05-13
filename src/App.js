@@ -1,15 +1,17 @@
-// src/App.js
 import './App.scss';
 import Main from './layout/main';
 import { ToolProvider } from './context/ToolContext';
+import { NotebookProvider } from './context/NotebookContext';
 
 function App() {
   return (
-    <ToolProvider>
-      <div className="App">
-        <Main/>
-      </div>
-    </ToolProvider>
+    <NotebookProvider>
+      <ToolProvider>
+        <div className="App">
+          <Main/>
+        </div>
+      </ToolProvider>
+    </NotebookProvider>
   );
 }
 
